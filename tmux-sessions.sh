@@ -88,15 +88,14 @@ list()
         vs=( $s )
         IFS=$ifs
         has_session=""
-        group="${vs[0]}"
+        sgroup="${vs[0]}"
         session="${vs[1]%.*}"
         client=$($_tmux list-clients 2> /dev/null | \
                              $_grep " $session " | $_cut -d":" -f1)
-        store="$confdir/$s"
-        if $_tmux has-session -t "$session" 2> /dev/null ; then
-            has_session="y"
+        store="$s"
+        if ! $_tmux has-session -t "$session" 2> /dev/null ; then
+            sessions["$session"]="$has_session;;$sgroup;$client;$store"
         fi
-        sessions["$session"]="$has_session;$group;$client;$store"
     done
 
     active_sessions=( $($_tmux list-sessions -F '#{session_group};#S') ) || true
@@ -109,13 +108,15 @@ list()
         [ -z "$group" ] && group=$nogroup
         session="${vs[1]}"
         client=$($_tmux list-clients | $_grep " $session " | $_cut -d":" -f1)
-        store=$($_find $confdir/$group/ -type f -name "$session.new")
+        store=$($_find $confdir -type f -name "$session.new")
         [ -z "$store" ] &&
-            store=$($_find $confdir/$group/ -type f -name "$session.copy")
-        sessions[$session]="y;$group;$client;$store"
+            store=$($_find $confdir -type f -name "$session.copy")
+        store=${store##$confdir}
+        sgroup=${store%/*}
+        sessions["$session"]="y;$group;$sgroup;$client;$store"
     done
 
-    echo -e "[\e[1mgroup:session\e[0m] [\e[1mclient\e[0m] [\e[1mstorage file\e[0m]"
+    printf "[\e[1mgroup#:name]%6s[session\e[0m]%10s[\e[1mclient\e[0m]%6s[\e[1mstorage file\e[0m]\n"
     for session in ${!sessions[@]} ; do
         ifs=$IFS
         IFS=";" 
@@ -123,31 +124,50 @@ list()
         IFS=$ifs
         has_session="${vs[0]}"
         group="${vs[1]}"
-        client="${vs[2]}"
-        store="${vs[3]}"
+        sgroup="${vs[2]}"
+        client="${vs[3]}"
+        store="${vs[4]}"
+        out="["
+        s=1
         if [ -z "$group" ] || [ "$group" == "$nogroup" ] ; then
-            out="[\e[0;31m.\e[0;39m:"
+            out="$out\e[0;31m.\e[0;39m:"
+            (( s++ ))
         else
-            out="[\e[0;32m$group\e[0;39m:"
+            out="$out\e[0;32m$group\e[0;39m:"
+            (( s += ${#group} ))
         fi
+        if [ -z "$sgroup" ] ; then
+            out="$out\e[0;31m.\e[0;39m]"
+            (( s++ ))
+        else
+            out="$out\e[0;32m$sgroup\e[0;39m]"
+            (( s += ${#sgroup} ))
+        fi
+        (( s = 17 - s ))
+        out="$out%${s}s"
         if [ -n "$client" ] ; then
-            out="$out\e[1;32m$session\e[0;39m] "
+            out="$out[\e[1;32m$session\e[0;39m]"
         elif [ -n "$has_session" ] ; then
-            out="$out\e[1;33m$session\e[0;39m] "
+            out="$out[\e[1;33m$session\e[0;39m]"
         else
-            out="$out\e[1;31m$session\e[0;39m] "
+            out="$out[\e[1;31m$session\e[0;39m]"
         fi
+        (( s = 17 - ${#session} ))
+        out="$out%${s}s"
         if [ -n "$client" ] ; then
-            out="$out[\e[0;32m$client\e[0;39m] "
+            out="$out[\e[0;32m$client\e[0;39m]"
+            (( s = 12 - ${#client} ))
         else
-            out="$out[\e[0;31m...\e[0;39m] "
+            out="$out[\e[0;31m...\e[0;39m]"
+            s=9
         fi
+        out="$out%${s}s"
         if [ -n "$store" ] ; then
             out="$out[\e[0;32m$store\e[0;39m]"
         else
             out="$out[\e[0;31m...\e[0;39m]"
         fi
-        echo -e "$out"
+        printf "$out\n"
     done
 }
 
