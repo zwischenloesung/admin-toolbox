@@ -90,7 +90,8 @@ list()
         has_session=""
         group="${vs[0]}"
         session="${vs[1]%.*}"
-        client=$($_tmux list-clients | $_grep " $session " | $_cut -d":" -f1)
+        client=$($_tmux list-clients 2> /dev/null | \
+                             $_grep " $session " | $_cut -d":" -f1)
         store="$confdir/$s"
         if $_tmux has-session -t "$session" 2> /dev/null ; then
             has_session="y"
@@ -98,7 +99,7 @@ list()
         sessions["$session"]="$has_session;$group;$client;$store"
     done
 
-    active_sessions=( $($_tmux list-sessions -F '#{session_group};#S') )
+    active_sessions=( $($_tmux list-sessions -F '#{session_group};#S') ) || true
     for s in ${active_sessions[@]} ; do
         ifs=$IFS
         IFS=";" 
