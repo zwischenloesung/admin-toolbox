@@ -29,23 +29,18 @@ verbose=0
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
-sys_tools=( ["_awk"]="/usr/bin/awk"
-            ["_basename"]="/usr/bin/basename"
-            ["_cat"]="/bin/cat"
+sys_tools=(
             ["_cut"]="/usr/bin/cut"
-            ["_cp"]="/bin/cp"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_head"]="/usr/bin/head"
-            ["_ls"]="/bin/ls"
             ["_mkdir"]="/bin/mkdir"
-            ["_pwd"]="/bin/pwd"
             ["_rm"]="/bin/rm"
             ["_rmdir"]="/bin/rmdir"
             ["_sed"]="/bin/sed"
             ["_tmux"]="/usr/bin/tmux"
-            ["_tr"]="/usr/bin/tr" )
-danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_rm" "_rmdir" )
+)
+danger_tools=( "_mkdir" "_rm" "_rmdir" )
 
 ## functions ##
 
