@@ -139,6 +139,9 @@ list()
         if [ -z "$sgroup" ] ; then
             out="$out\e[0;31m.\e[0;39m]"
             (( s++ ))
+        elif [ "$sgroup" == "$nogroup" ] ; then
+            out="$out\e[0;33m$sgroup\e[0;39m]"
+            (( s += ${#sgroup} ))
         else
             out="$out\e[0;32m$sgroup\e[0;39m]"
             (( s += ${#sgroup} ))
@@ -184,7 +187,10 @@ store()
         IFS=$ifs
         group="${vs[0]}"
         session="${vs[1]}"
-
+        stored=$($_find $confdir -type f -name "${session}.*" -printf '%P\n')
+        if [ -n "$stored" ] ; then
+            group=${stored%/*}
+        fi
         if [ ${#@} -gt 0 ] ; then
             [ -n "${requested/*$session*/}" ] && continue
         fi
@@ -344,4 +350,4 @@ case $1 in
     ;;
 esac
 
-#* TODO Bug: What if the same session group number exists already?
+##* TODO Bug:
