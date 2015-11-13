@@ -15,7 +15,7 @@
 
 ### you may copy the following variables into this file for having your own
 ### local config ...
-#conffile=~/.tmux-sessions.sh
+conffile=~/.tmux-sessions.sh
 
 ### {{{
 
