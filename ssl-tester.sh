@@ -5,6 +5,8 @@
 #* all that openssl commands was to much for my small brain. Default
 #* port is HTTPS.
 #
+# note: the frame for this script was auto-created with
+# *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
 ########################################################################
 # author/copyright: <mic@inofix.ch>
 # license: gladly sharing with the universe and any lifeform,

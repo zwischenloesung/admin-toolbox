@@ -145,6 +145,8 @@ fi
 #** Version:
 #* This script helps ..?
 #
+# note: the frame for this script was auto-created with
+# *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
 $license
 [ "\$1" == "debug" ] && shift && set -x
 

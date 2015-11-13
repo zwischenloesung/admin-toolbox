@@ -5,6 +5,8 @@
 #* to spaces and eliminating trailing spaces. It can also be used to
 #* replace (sed) other things.
 #
+# note: the frame for this script was auto-created with
+# *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
 ########################################################################
 # author/copyright: <mic@inofix.ch>
 # license: gladly sharing with the universe and any lifeform,

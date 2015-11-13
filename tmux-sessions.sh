@@ -3,9 +3,9 @@
 #** Version: 1.0
 #* This script stores and restores tmux sessions.
 #
-########################################################################
-# the frame for this script was auto-created with
+# note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
+########################################################################
 # author/copyright: <michael.lustenberger@inofix.ch>
 # license: gladly sharing with the universe and any lifeform,
 #          be it naturally born or constructed, alien or kin..
