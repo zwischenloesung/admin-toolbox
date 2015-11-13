@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 0.9
+#** Version: 1.0
 #* This script stores and restores tmux sessions.
 #
 ########################################################################
@@ -23,7 +23,7 @@ confdir=~/.tmux-sessions/
 nogroup="nogroup"
 rm_interactive=0
 verbose=0
-favorite_term="/usr/bin/urxvt -fn 6x13 +sb -tr -bg black -fg white -sh 60 -sl 10000"
+# not used yet: favorite_term="/usr/bin/urxvt -fn 6x13 +sb -tr -bg black -fg white -sh 60 -sl 10000"
 
 ### }}}
 
@@ -350,4 +350,7 @@ case $1 in
     ;;
 esac
 
-##* TODO Bug:
+#* TODO:
+#*  Missing Features:
+#*   * Implement the attach action
+#*  Known Bugs:
