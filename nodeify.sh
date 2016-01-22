@@ -148,12 +148,12 @@ while true ; do
 #*      -N |--node node                     only process a certain node
         -N|--node)
             shift
-            nodefilter=$1
+            nodefilter="$1"
         ;;
 #*      -P |--project project               only process nodes from this project
         -P|--project)
             shift
-            projectfilter=$1
+            projectfilter="$1"
         ;;
 #*      -v |--version
         -v|--version)
@@ -217,6 +217,45 @@ parse_node()
                 END {print applications}')
 }
 
+process_nodes()
+{
+    command=$1
+    shift
+    for n in $@ ; do
+
+        if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] ; then
+            continue
+        fi
+        parse_node $n
+        $command $n
+    done
+}
+
+list_node()
+{
+    output="\e[1;39m$n \e[1;36m($project)"
+    if [ "$environement" == "development" ] ; then
+         output="$output \e[1;32m$environement"
+    elif [ "$environement" == "fallback" ] ; then
+         output="$output \e[1;33m$environement"
+    elif [ "$environement" == "productive" ] ; then
+         output="$output \e[1;31m$environement"
+    fi
+    printf "$output\n"
+}
+
+list_node_stores()
+{
+    list_node $n
+    for d in ${storagedirs[@]} ; do
+        if [ -d "$d" ] ; then
+            printf "\e[0;32m - $d\n"
+        else
+            printf "\e[0;33m - $d      MISSING!\n"
+        fi
+    done
+}
+
 reclass_filter=""
 if [ -n "$projectfilter" ] ; then
     if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
@@ -235,20 +274,10 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 case $1 in
 #*      list                                list nodes
     l*)
-        for n in ${nodes[@]} ; do
-
-            parse_node $n
-            output="\e[1;39m$n \e[1;36m$project"
-            if [ "$environement" == "development" ] ; then
-                 output="$output \e[1;32m$environement"
-            elif [ "$environement" == "fallback" ] ; then
-                 output="$output \e[1;33m$environement"
-            elif [ "$environement" == "productive" ] ; then
-                 output="$output \e[1;31m$environement"
-            fi
-            printf "$output\n"
-        done
+        process_nodes list_node ${nodes[@]}
     ;;
-    
+    s*)
+        process_nodes list_node_stores ${nodes[@]}
+    ;;
 esac
 
