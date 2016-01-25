@@ -41,10 +41,14 @@ conffile=~/.nodeify
 # whether to take action
 dryrun=1
 # whether we must run as root
-needsroot=0
+needsroot=1
+
+# rsync mode
+rsync_options="-a -v"
 
 # here you can store short hands for your project specific configs
 inventorydir=""
+targetdir=""
 
 ### }}}
 
@@ -65,11 +69,12 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_rm"]="/bin/rm"
             ["_rmdir"]="/bin/rmdir"
             ["_reclass"]="/usr/bin/reclass"
+            ["_rsync"]="/usr/bin/rsync"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
             ["_tr"]="/usr/bin/tr" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" )
+danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" "_rsync" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
 
@@ -154,6 +159,10 @@ while true ; do
         -P|--project)
             shift
             projectfilter="$1"
+        ;;
+#*      -r |--rsync-dry-run
+        -r|--rsync-dry-run)
+            rsync_options="$rsync_options -n"
         ;;
 #*      -v |--version
         -v|--version)
@@ -256,6 +265,18 @@ list_node_stores()
     done
 }
 
+merge_all()
+{
+    if [ ! -d "$targetdir" ] ; then
+        die "Target directory '$targetdir' does not exist!"
+    fi
+    for d in ${storagedirs[@]} ; do
+        if [ -d "$d" ] ; then
+            $_rsync $rsync_options $d/ $targetdir/$n/
+        fi
+    done
+}
+
 reclass_filter=""
 if [ -n "$projectfilter" ] ; then
     if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
@@ -276,8 +297,16 @@ case $1 in
     l*)
         process_nodes list_node ${nodes[@]}
     ;;
+#*      storages                            show storage directories
     s*)
         process_nodes list_node_stores ${nodes[@]}
+    ;;
+#*      merge-all                           just merge all storage directories
+    merge)
+        process_nodes merge_all ${nodes[@]}
+    ;;
+    *)
+        print_usage
     ;;
 esac
 
