@@ -44,7 +44,7 @@ dryrun=1
 needsroot=1
 
 # rsync mode
-rsync_options="-a -v -m --exclude='.keep'"
+rsync_options="-a -v -m --exclude=.keep"
 
 merge_only_this_subdir=""
 default_merge_mode="dir"
@@ -63,12 +63,14 @@ projectfilter=""
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
 sys_tools=( ["_awk"]="/usr/bin/awk"
+            ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_mkdir"]="/bin/mkdir"
+            ["_mv"]="/bin/mv"
             ["_pwd"]="/bin/pwd"
             ["_rm"]="/bin/rm"
             ["_rmdir"]="/bin/rmdir"
@@ -303,20 +305,44 @@ merge_all()
                 fi
             done
         ;;&
+        in|post|pre)
+            t="$targetdir/$n/"
+            for d in $($_find $t -type d) ; do
+                $_mkdir -p $targetdir/${d/$t/}
+            done
+        ;;&
         in)
-            echo "do infix"
-            for d in $($_find $targetdir/$n/ -type d) ; do
-                echo "found dir $d"
+            for f in $($_find $t -type f) ; do
+                basename=$($_basename $f)
+                fullpath=${f%%$basename}
+                targetpath=${fullpath/$t}
+                suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
+                prefix=${basename/.$suffix}
+                [ -n "$suffix" ] && suffix=".$suffix"
+                $_mv $f $targetdir/$targetpath/${prefix}_${n}$suffix
             done
         ;;&
         post)
-            echo "do postfix"
+            for f in $($_find $t -type f) ; do
+                basename=$($_basename $f)
+                fullpath=${f%%$basename}
+                targetpath=${fullpath/$t}
+                $_mv $f $targetdir/$targetpath/${basename}_$n
+            done
         ;;&
         pre)
-            echo "do prefix"
+            for f in $($_find $t -type f) ; do
+                basename=$($_basename $f)
+                fullpath=${f%%$basename}
+                targetpath=${fullpath/$t}
+                $_mv $f $targetdir/$targetpath/${n}_$basename
+            done
         ;;&
         in|post|pre)
-            echo "and this cleanup"
+            t="$targetdir/$n/*"
+            for d in $($_find $t -depth -type d) ; do
+                $_rmdir ${d}
+            done
         ;;
         dir)
         ;;
