@@ -44,7 +44,10 @@ dryrun=1
 needsroot=1
 
 # rsync mode
-rsync_options="-a -v"
+rsync_options="-a -v -m --exclude='.keep'"
+
+merge_only_this_subdir=""
+default_merge_mode="dir"
 
 # here you can store short hands for your project specific configs
 inventorydir=""
@@ -62,6 +65,7 @@ declare -A sys_tools
 sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
+            ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_mkdir"]="/bin/mkdir"
@@ -132,7 +136,7 @@ done
 #*  options:
 while true ; do
     case "$1" in
-#*      -c |--config conffile               alternative config file
+#*      -c |--config conffile           alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -141,21 +145,30 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
-#*      -h |--help                          print this help
+#*      -h |--help                      print this help
         -h|--help)
             print_help
             exit 0
         ;;
-#*      -n |--dry-run                       do not change anything
+#*      -m |--merge mode                specify how to merge, available modes:
+#*                                          dir     nodename based directories
+#*                                          in      nodename infixed files
+#*                                          pre     nodename prefixed files
+#*                                          post    nodename postfixed files
+        -m|--merge)
+            shift
+            default_merge_mode=$1
+        ;;
+#*      -n |--dry-run                   do not change anything
         -n|--dry-run)
             dryrun=0
         ;;
-#*      -N |--node node                     only process a certain node
+#*      -N |--node node                 only process a certain node
         -N|--node)
             shift
             nodefilter="$1"
         ;;
-#*      -P |--project project               only process nodes from this project
+#*      -P |--project project           only process nodes from this project
         -P|--project)
             shift
             projectfilter="$1"
@@ -163,6 +176,11 @@ while true ; do
 #*      -r |--rsync-dry-run
         -r|--rsync-dry-run)
             rsync_options="$rsync_options -n"
+        ;;
+#*      -s |--subdir-only-merge         concentrate on this subdir only
+        -s|--subdir-only-merge)
+            shift
+            merge_only_this_subdir=$1
         ;;
 #*      -v |--version
         -v|--version)
@@ -270,11 +288,42 @@ merge_all()
     if [ ! -d "$targetdir" ] ; then
         die "Target directory '$targetdir' does not exist!"
     fi
-    for d in ${storagedirs[@]} ; do
-        if [ -d "$d" ] ; then
-            $_rsync $rsync_options $d/ $targetdir/$n/
-        fi
-    done
+    src_subdir=""
+    trgt_subdir=""
+    if [ -n "$merge_only_this_subdir" ] ; then
+        src="$merge_only_this_subdir"
+        trgt="$merge_only_this_subdir"
+    fi
+    case "$default_merge_mode" in
+        dir|in|post|pre)
+            for d in ${storagedirs[@]} ; do
+                if [ -d "$d/$src" ] ; then
+                    $_mkdir -p $targetdir/$n/$trgt/
+                    $_rsync $rsync_options $d/$src/ $targetdir/$n/$trgt/
+                fi
+            done
+        ;;&
+        in)
+            echo "do infix"
+            for d in $($_find $targetdir/$n/ -type d) ; do
+                echo "found dir $d"
+            done
+        ;;&
+        post)
+            echo "do postfix"
+        ;;&
+        pre)
+            echo "do prefix"
+        ;;&
+        in|post|pre)
+            echo "and this cleanup"
+        ;;
+        dir)
+        ;;
+        *)
+            die "merge mode '$default_merge_mode' is not supported.."
+        ;;
+    esac
 }
 
 reclass_filter=""
@@ -293,16 +342,16 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #*  actions:
 case $1 in
-#*      list                                list nodes
-    l*)
+#*      list                            list nodes
+    ls|list)
         process_nodes list_node ${nodes[@]}
     ;;
-#*      storages                            show storage directories
-    s*)
+#*      storages                        show storage directories
+    src|st*)
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*      merge-all                           just merge all storage directories
-    merge)
+#*      merge-all                       just merge all storage directories
+    merge*)
         process_nodes merge_all ${nodes[@]}
     ;;
     *)
