@@ -242,7 +242,8 @@ parse_node()
                 /^environment:/{mode="none"; \
                     print "environement="$2}; \
                 /^  storage-dirs:$/{mode="storagedirs"}; \
-                /- / {list=list " " $2}; \
+                /^  re-merge-exceptions:$/{mode="remergeexceptions"}; \
+                / - / {list=list " " $2}; \
                 END {print applications}')
 }
 
@@ -276,12 +277,75 @@ list_node()
 list_node_stores()
 {
     list_node $n
-    for d in ${storagedirs[@]} ; do
+    list_node_arrays ${storagedirs[@]}
+}
+
+list_node_re_merge_exceptions()
+{
+    list_node $n
+    list_node_arrays ${remergeexceptions[@]}
+}
+
+list_node_arrays()
+{
+    for d in $@ ; do
         if [ -d "$d" ] ; then
             printf "\e[0;32m - $d\n"
         else
-            printf "\e[0;33m - $d      MISSING!\n"
+            printf "\e[0;33m ! $d \n"
         fi
+    done
+}
+
+do_sync()
+{
+    if [ -d "$1" ] ; then
+        $_mkdir -p $2
+        $_rsync $rsync_options $1 $2
+    fi
+}
+
+re_merge_fix_in()
+{
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
+        prefix=${basename/.$suffix}
+        [ -n "$suffix" ] && suffix=".$suffix"
+        $_mv $f $targetdir/$targetpath/${prefix}_${n}$suffix
+    done
+}
+
+re_merge_fix_pre()
+{
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        $_mv $f $targetdir/$targetpath/${basename}_$n
+    done
+}
+
+re_merge_fix_post()
+{
+# TODO maybe we want to ask for what to do with links..
+    for f in $($_find $1 -type f) ; do
+        basename=$($_basename $f)
+        fullpath=${f%%$basename}
+        targetpath=${fullpath/$1}
+        $_mv $f $targetdir/$targetpath/${n}_$basename
+    done
+}
+
+re_merge_exceptions_first()
+{
+    for f in ${remergeexceptions[@]} ; do
+
+        $_mv $2/$1/$f $2/$f
     done
 }
 
@@ -299,52 +363,27 @@ merge_all()
     case "$default_merge_mode" in
         dir|in|post|pre)
             for d in ${storagedirs[@]} ; do
-                if [ -d "$d/$src" ] ; then
-                    $_mkdir -p $targetdir/$n/$trgt/
-                    $_rsync $rsync_options $d/$src/ $targetdir/$n/$trgt/
-                fi
+                do_sync "$d/$src/" "$targetdir/$n/$trgt/"
             done
         ;;&
+        dir)
+        ;;
         in|post|pre)
             t="$targetdir/$n/"
             for d in $($_find $t -type d) ; do
                 $_mkdir -p $targetdir/${d/$t/}
             done
-        ;;&
-        in)
-            for f in $($_find $t -type f) ; do
-                basename=$($_basename $f)
-                fullpath=${f%%$basename}
-                targetpath=${fullpath/$t}
-                suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
-                prefix=${basename/.$suffix}
-                [ -n "$suffix" ] && suffix=".$suffix"
-                $_mv $f $targetdir/$targetpath/${prefix}_${n}$suffix
+            re_merge_exceptions_first $n $targetdir
+            re_merge_fix_$default_merge_mode $t
+
+            t="${t}*"
+# TODO maybe we want to ask for what to do with links..
+            for f in $($_find $t -type l) ; do
+                $_rm $f
             done
-        ;;&
-        post)
-            for f in $($_find $t -type f) ; do
-                basename=$($_basename $f)
-                fullpath=${f%%$basename}
-                targetpath=${fullpath/$t}
-                $_mv $f $targetdir/$targetpath/${basename}_$n
-            done
-        ;;&
-        pre)
-            for f in $($_find $t -type f) ; do
-                basename=$($_basename $f)
-                fullpath=${f%%$basename}
-                targetpath=${fullpath/$t}
-                $_mv $f $targetdir/$targetpath/${n}_$basename
-            done
-        ;;&
-        in|post|pre)
-            t="$targetdir/$n/*"
             for d in $($_find $t -depth -type d) ; do
                 $_rmdir ${d}
             done
-        ;;
-        dir)
         ;;
         *)
             die "merge mode '$default_merge_mode' is not supported.."
@@ -372,13 +411,17 @@ case $1 in
     ls|list)
         process_nodes list_node ${nodes[@]}
     ;;
-#*      storages                        show storage directories
-    src|st*)
-        process_nodes list_node_stores ${nodes[@]}
-    ;;
 #*      merge-all                       just merge all storage directories
     merge*)
         process_nodes merge_all ${nodes[@]}
+    ;;
+#*      re-merge-exceptions             show exceptions for merge modes
+    rmx|rx|re-merge-*)
+        process_nodes list_node_re_merge_exceptions ${nodes[@]}
+    ;;
+#*      storages                        show storage directories
+    src|st*)
+        process_nodes list_node_stores ${nodes[@]}
     ;;
     *)
         print_usage
