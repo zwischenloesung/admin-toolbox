@@ -231,20 +231,53 @@ parse_node()
 {
     eval $(\
         $_reclass -b $inventorydir -n $1 |\
-        $_awk 'BEGIN {mode="none"; list=""}; \
-                !/- / { if (mode!="none"){ \
-                    print mode"=( "list" )"; \
-                    mode="none"; \
-                    list=""}} \
-                /^  node:/{sub("/.*", "", $2); print "project="$2}; \
-                /^applications:$/{mode="applications"}; \
-                /^classes:$/{mode="classes"}; \
-                /^environment:/{mode="none"; \
-                    print "environement="$2}; \
-                /^  storage-dirs:$/{mode="storagedirs"}; \
-                /^  re-merge-exceptions:$/{mode="remergeexceptions"}; \
-                / - / {list=list " " $2}; \
-                END {print applications}')
+        $_awk  'BEGIN {
+                    mode="none"
+                    list=""
+                }
+                !/- / {
+                    if (mode!="none"){
+                        print mode"=( "list" )"
+                        mode="none"
+                        list=""
+                    }
+                }
+                /^  node:/ {
+                    sub("/.*", "", $2)
+                    print "project="$2
+                    next
+                }
+                /^applications:$/ {
+                    mode="applications"
+                    next
+                }
+                /^classes:$/ {
+                    mode="classes"
+                    next
+                }
+                /^environment:/ {
+                    mode="none"
+                    print "environement="$2
+                    next
+                }
+                /^  storage-dirs:$/ {
+                    mode="storagedirs"
+                    next
+                }
+                /^  re-merge-exceptions:$/ {
+                    mode="remergeexceptions"
+                    next
+                }
+                / - / {
+                    list=list " " $2
+                    next
+                }
+                {
+                    mode="none"
+                }
+                END {
+                    print applications
+                }')
 }
 
 process_nodes()
@@ -407,22 +440,30 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #*  actions:
 case $1 in
-#*      list                            list nodes
-    ls|list)
+#*      help                            print this help
+    help)
+        print_help
+    ;;
+#*      list (ls)                       list nodes
+    ls|list*)
         process_nodes list_node ${nodes[@]}
+    ;;
+#*      list-re-merge-exceptions (lsr)  show exceptions for merge modes
+    lsr|list-re*)
+        process_nodes list_node_re_merge_exceptions ${nodes[@]}
+    ;;
+#*      list-storage (lss)              show storage directories
+    lss|list-storage)
+        process_nodes list_node_stores ${nodes[@]}
     ;;
 #*      merge-all                       just merge all storage directories
     merge*)
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      re-merge-exceptions             show exceptions for merge modes
-    rmx|rx|re-merge-*)
-        process_nodes list_node_re_merge_exceptions ${nodes[@]}
-    ;;
-#*      storages                        show storage directories
-    src|st*)
-        process_nodes list_node_stores ${nodes[@]}
-    ;;
+##*      re-merge                        remerge as specified in '--merge mode'
+#    rem|re-merge*)
+#        process_nodes re-merge ${nodes[@]}
+#    ;;
     *)
         print_usage
     ;;
