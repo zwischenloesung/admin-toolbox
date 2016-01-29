@@ -33,6 +33,7 @@
 [ "$1" == "debug" ] && shift && set -x
 
 ## variables ##
+declare -A projectdirs
 ### you may copy the following variables into this file for having your own
 ### local config ...
 conffile=~/.nodeify
@@ -69,6 +70,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
+            ["_lsb_release"]="/usr/bin/lsb_release"
             ["_mkdir"]="/bin/mkdir"
             ["_mv"]="/bin/mv"
             ["_pwd"]="/bin/pwd"
@@ -78,6 +80,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_rsync"]="/usr/bin/rsync"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
+            ["_ssh"]="/usr/bin/ssh"
             ["_tr"]="/usr/bin/tr" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
 danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" "_rsync" )
@@ -104,13 +107,6 @@ print_version()
 
 die()
 {
-# we need:
-#  hostname(s)
-#  targetdir
-#  hosts roles file
-#  target dir (might come from conffile)
-#  (projectdirs from $conffile)
-#  (roles from $conffile)
     echo "$@"
     exit 1
 }
@@ -226,14 +222,42 @@ classes=()
 environement=""
 project=""
 storagedirs=()
+remergeexceptions=()
 
 parse_node()
 {
+    awk_var_p_keys=";"
+    awk_var_p_vals=";"
+    for k in ${!projectdirs[@]} ; do
+        awk_var_p_keys="$k;$awk_var_p_keys"
+        awk_var_p_vals="${projectdirs[$k]};$awk_var_p_vals"
+    done
+    awk_vars="-v p_len=${#projectdirs[@]} -v p_keys=$awk_var_p_keys -v p_vals=$awk_var_p_vals"
     eval $(\
         $_reclass -b $inventorydir -n $1 |\
-        $_awk  'BEGIN {
+        $_awk $awk_vars 'BEGIN {
+                    hostname="'$hostname'"
+                    domainname="'$domainname'"
+                    fqdn="'$n'"
+                    split(p_keys, project_keys, ";")
+                    split(p_vals, project_vals, ";")
+                    for (i=1;i<=p_len;i++) {
+                        projects[project_keys[i]]=project_vals[i]
+                    }
                     mode="none"
                     list=""
+                }
+                #sanitize input a little
+                /<|>|\$|\|/ {
+                    next
+                }
+                /_{{ .* }}_/ {
+                    gsub("_{{ hostname }}_", hostname)
+                    gsub("_{{ domainname }}_", domainname)
+                    gsub("_{{ fqdn }}_", fqdn)
+                    for (var in projects) {
+                        gsub("_{{ "var" }}_", projects[var])
+                    }
                 }
                 !/- / {
                     if (mode!="none"){
@@ -276,8 +300,22 @@ parse_node()
                     mode="none"
                 }
                 END {
-                    print applications
-                }')
+                }'
+    )
+}
+
+connect_node()
+{
+    list_node $n
+    retval=0
+    answer=$( $_ssh $1 $_lsb_release -d 2>&1) || retval=$?
+    if [ $retval -gt 127 ] ; then
+        printf " \e[1;31m$answer\n"
+    elif [ $retval -gt 0 ] ; then
+        printf " \e[1;33m$answer\n"
+    else
+        printf " \e[1;32m$answer\n"
+    fi
 }
 
 process_nodes()
@@ -289,6 +327,8 @@ process_nodes()
         if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] ; then
             continue
         fi
+        hostname="${n%%.*}"
+        domainname="${n#*.}"
         parse_node $n
         $command $n
     done
@@ -464,6 +504,9 @@ case $1 in
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
 #    ;;
+    status)
+        process_nodes connect_node ${nodes[@]}
+    ;;
     *)
         print_usage
     ;;
