@@ -82,7 +82,8 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
             ["_ssh"]="/usr/bin/ssh"
-            ["_tr"]="/usr/bin/tr" )
+            ["_tr"]="/usr/bin/tr"
+            ["_wc"]="/usr/bin/wc" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
 danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" "_rsync" )
 # special case sudo (not mandatory)
@@ -264,18 +265,18 @@ parse_node()
                     gsub("_{{ "var" }}_", projects[var])
                 }
             }
-            !/ - |^    / {
+            !/^ *- |^    / {
                 if (mode!="none"){
                     print mode"=( "list" )"
                     mode="none"
                     list=""
                 }
             }
-#            /^  node:/ {
-#                sub("/.*", "", $2)
-#                print "project="$2
-#                next
-#            }
+            /^  node:/ {
+                sub("/.*", "", $2)
+                print "project="$2
+                next
+            }
             /^applications:$/ {
                 mode="applications"
                 next
@@ -301,7 +302,7 @@ parse_node()
                 mode="remergecustom"
                 next
             }
-            / - / {
+            /^ *- / {
                 list=list " " $2
                 next
             }
@@ -339,8 +340,8 @@ process_nodes()
     command=$1
     shift
     for n in $@ ; do
-
-        if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] ; then
+        if [ -n "$nodefilter" ] && [ "$nodefilter" != "$n" ] &&
+                [ "$nodefilter" != "${n%%.*}" ]  ; then
             continue
         fi
         hostname="${n%%.*}"
@@ -396,6 +397,22 @@ list_node_arrays()
         else
             printf "\e[0;33m ! $d \n"
         fi
+    done
+}
+
+declare -A applications_dict
+list_applications()
+{
+    for a in ${applications[@]} ; do
+        applications_dict[$a]=$n:${applications_dict[$a]}
+    done
+}
+
+declare -A classes_dict
+list_classes()
+{
+    for c in ${classes[@]} ; do
+        classes_dict[$c]=$n:${classes_dict[$c]}
     done
 }
 
@@ -542,12 +559,32 @@ case $1 in
     ls|list*)
         process_nodes list_node ${nodes[@]}
     ;;
-#*      list-re-merge-customs (lsc)     show custom merge rules
+#*      list-applications (lsa)         show hosts sorted by application
+    lsa|list-a*)
+        process_nodes list_applications ${nodes[@]}
+        for a in ${!applications_dict[@]} ; do
+            printf "\e[1;39m[$a]\n"
+            for h in ${applications_dict[$a]//:/ } ; do
+                printf "\e[0;32m$h\n"
+            done
+        done
+    ;;
+#*      list-classes (lsc)              show hosts sorted by class
     lsc|list-c*)
+        process_nodes list_classes ${nodes[@]}
+        for a in ${!classes_dict[@]} ; do
+            printf "\e[1;39m[$a]\n"
+            for h in ${classes_dict[$a]//:/ } ; do
+                printf "\e[0;32m$h\n"
+            done
+        done
+    ;;
+#*      list-re-merge-customs (lsrc)    show custom merge rules
+    lsrc|list-rc*)
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*      list-re-merge-exceptions (lsr)  show exceptions for merge modes
-    lsr|list-re*)
+#*      list-re-merge-exceptions (lsre) show exceptions for merge modes
+    lsre|list-re*)
         process_nodes list_node_re_merge_exceptions ${nodes[@]}
     ;;
 #*      list-storage (lss)              show storage directories
