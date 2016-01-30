@@ -67,6 +67,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
+            ["_dirname"]="/usr/bin/dirname"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
@@ -149,10 +150,11 @@ while true ; do
             exit 0
         ;;
 #*      -m |--merge mode                specify how to merge, available modes:
-#*                                          dir     nodename based directories
-#*                                          in      nodename infixed files
-#*                                          pre     nodename prefixed files
-#*                                          post    nodename postfixed files
+#*                                        custom based on "re-merge-custom:"
+#*                                        dir    nodename based dirs (default)
+#*                                        in     nodename infixed files
+#*                                        pre    nodename prefixed files
+#*                                        post   nodename postfixed files
         -m|--merge)
             shift
             default_merge_mode=$1
@@ -223,6 +225,8 @@ environement=""
 project=""
 storagedirs=()
 remergeexceptions=()
+declare -A remergecustom
+remergecustom=()
 
 parse_node()
 {
@@ -235,72 +239,84 @@ parse_node()
     awk_vars="-v p_len=${#projectdirs[@]} -v p_keys=$awk_var_p_keys -v p_vals=$awk_var_p_vals"
     eval $(\
         $_reclass -b $inventorydir -n $1 |\
-        $_awk $awk_vars 'BEGIN {
-                    hostname="'$hostname'"
-                    domainname="'$domainname'"
-                    fqdn="'$n'"
-                    split(p_keys, project_keys, ";")
-                    split(p_vals, project_vals, ";")
-                    for (i=1;i<=p_len;i++) {
-                        projects[project_keys[i]]=project_vals[i]
-                    }
+        $_awk $awk_vars \
+            'BEGIN {
+                hostname="'$hostname'"
+                domainname="'$domainname'"
+                fqdn="'$n'"
+                split(p_keys, project_keys, ";")
+                split(p_vals, project_vals, ";")
+                for (i=1;i<=p_len;i++) {
+                    projects[project_keys[i]]=project_vals[i]
+                }
+                mode="none"
+                list=""
+            }
+            #sanitize input a little
+            /<|>|\$|\|/ {
+                next
+            }
+            /_{{ .* }}_/ {
+                gsub("_{{ hostname }}_", hostname)
+                gsub("_{{ domainname }}_", domainname)
+                gsub("_{{ fqdn }}_", fqdn)
+                for (var in projects) {
+                    gsub("_{{ "var" }}_", projects[var])
+                }
+            }
+            !/ - |^    / {
+                if (mode!="none"){
+                    print mode"=( "list" )"
                     mode="none"
                     list=""
                 }
-                #sanitize input a little
-                /<|>|\$|\|/ {
-                    next
+            }
+#            /^  node:/ {
+#                sub("/.*", "", $2)
+#                print "project="$2
+#                next
+#            }
+            /^applications:$/ {
+                mode="applications"
+                next
+            }
+            /^classes:$/ {
+                mode="classes"
+                next
+            }
+            /^environment:/ {
+                mode="none"
+                print "environement="$2
+                next
+            }
+            /^  storage-dirs:$/ {
+                mode="storagedirs"
+                next
+            }
+            /^  re-merge-exceptions:$/ {
+                mode="remergeexceptions"
+                next
+            }
+            /^  re-merge-custom:$/ {
+                mode="remergecustom"
+                next
+            }
+            / - / {
+                list=list " " $2
+                next
+            }
+            /^    / {
+                if (mode == "remergecustom") {
+                    sub(":", "", $1)
+                    list=list " [\""$1"\"]=\""$2"\""
                 }
-                /_{{ .* }}_/ {
-                    gsub("_{{ hostname }}_", hostname)
-                    gsub("_{{ domainname }}_", domainname)
-                    gsub("_{{ fqdn }}_", fqdn)
-                    for (var in projects) {
-                        gsub("_{{ "var" }}_", projects[var])
-                    }
-                }
-                !/- / {
-                    if (mode!="none"){
-                        print mode"=( "list" )"
-                        mode="none"
-                        list=""
-                    }
-                }
-                /^  node:/ {
-                    sub("/.*", "", $2)
-                    print "project="$2
-                    next
-                }
-                /^applications:$/ {
-                    mode="applications"
-                    next
-                }
-                /^classes:$/ {
-                    mode="classes"
-                    next
-                }
-                /^environment:/ {
-                    mode="none"
-                    print "environement="$2
-                    next
-                }
-                /^  storage-dirs:$/ {
-                    mode="storagedirs"
-                    next
-                }
-                /^  re-merge-exceptions:$/ {
-                    mode="remergeexceptions"
-                    next
-                }
-                / - / {
-                    list=list " " $2
-                    next
-                }
-                {
-                    mode="none"
-                }
-                END {
-                }'
+                next
+            }
+            {
+                mode="none"
+            }
+            END {
+            }'
     )
 }
 
@@ -359,6 +375,19 @@ list_node_re_merge_exceptions()
     list_node_arrays ${remergeexceptions[@]}
 }
 
+list_node_re_merge_custom()
+{
+    list_node $n
+    list_node_dict ${!remergecustom[@]}
+}
+
+list_node_dict()
+{
+    for m in $@ ; do
+        printf "\e[0;36m   $m: \e[0;35m ${remergecustom[$m]}\n"
+    done
+}
+
 list_node_arrays()
 {
     for d in $@ ; do
@@ -378,8 +407,25 @@ do_sync()
     fi
 }
 
+re_merge_custom()
+{
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
+    for f in $($_find $1 -type f) ; do
+        k="/${f/$1}"
+        if [ -n "${remergecustom[$k]}" ] ; then
+            echo $_mkdir -p $($_dirname $targetdir/${remergecustom[$k]})
+            echo $_mv -i $f $targetdir/${remergecustom[$k]}
+        fi
+    done
+}
+
 re_merge_fix_in()
 {
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
 # TODO maybe we want to ask for what to do with links..
     for f in $($_find $1 -type f) ; do
         basename=$($_basename $f)
@@ -394,6 +440,9 @@ re_merge_fix_in()
 
 re_merge_fix_pre()
 {
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
 # TODO maybe we want to ask for what to do with links..
     for f in $($_find $1 -type f) ; do
         basename=$($_basename $f)
@@ -405,6 +454,9 @@ re_merge_fix_pre()
 
 re_merge_fix_post()
 {
+    #better safe than sorry
+    [ -n "$1" ] || error "ERROR: Source directory was empty!"
+    [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
 # TODO maybe we want to ask for what to do with links..
     for f in $($_find $1 -type f) ; do
         basename=$($_basename $f)
@@ -417,7 +469,6 @@ re_merge_fix_post()
 re_merge_exceptions_first()
 {
     for f in ${remergeexceptions[@]} ; do
-
         $_mv $2/$1/$f $2/$f
     done
 }
@@ -434,7 +485,7 @@ merge_all()
         trgt="$merge_only_this_subdir"
     fi
     case "$default_merge_mode" in
-        dir|in|post|pre)
+        dir|in|post|pre|custom)
             for d in ${storagedirs[@]} ; do
                 do_sync "$d/$src/" "$targetdir/$n/$trgt/"
             done
@@ -457,6 +508,9 @@ merge_all()
             for d in $($_find $t -depth -type d) ; do
                 $_rmdir ${d}
             done
+        ;;
+        custom)
+            re_merge_custom $targetdir/$n/
         ;;
         *)
             die "merge mode '$default_merge_mode' is not supported.."
@@ -487,6 +541,10 @@ case $1 in
 #*      list (ls)                       list nodes
     ls|list*)
         process_nodes list_node ${nodes[@]}
+    ;;
+#*      list-re-merge-customs (lsc)     show custom merge rules
+    lsc|list-c*)
+        process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
 #*      list-re-merge-exceptions (lsr)  show exceptions for merge modes
     lsr|list-re*)
