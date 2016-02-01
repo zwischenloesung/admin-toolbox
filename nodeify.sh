@@ -48,7 +48,7 @@ needsroot=1
 rsync_options="-a -v -m --exclude=.keep"
 
 merge_only_this_subdir=""
-default_merge_mode="dir"
+merge_mode="dir"
 
 # here you can store short hands for your project specific configs
 inventorydir=""
@@ -158,7 +158,7 @@ while true ; do
 #*                                        post   nodename postfixed files
         -m|--merge)
             shift
-            default_merge_mode=$1
+            merge_mode=$1
         ;;
 #*      -n |--dry-run                   do not change anything
         -n|--dry-run)
@@ -225,7 +225,7 @@ classes=()
 environement=""
 project=""
 storagedirs=()
-remergeexceptions=()
+remergedirect=()
 declare -A remergecustom
 remergecustom=()
 
@@ -290,12 +290,17 @@ parse_node()
                 print "environement="$2
                 next
             }
+            /^  role:/ {
+                mode="none"
+                print "role="$2
+                next
+            }
             /^  storage-dirs:$/ {
                 mode="storagedirs"
                 next
             }
-            /^  re-merge-exceptions:$/ {
-                mode="remergeexceptions"
+            /^  re-merge-direct:$/ {
+                mode="remergedirect"
                 next
             }
             /^  re-merge-custom:$/ {
@@ -353,13 +358,13 @@ process_nodes()
 
 list_node()
 {
-    output="\e[1;39m$n \e[1;36m($project)"
-    if [ "$environement" == "development" ] ; then
-         output="$output \e[1;32m$environement"
-    elif [ "$environement" == "fallback" ] ; then
-         output="$output \e[1;33m$environement"
-    elif [ "$environement" == "productive" ] ; then
-         output="$output \e[1;31m$environement"
+    output="\e[1;39m$n \e[1;36m($environement:$project)"
+    if [ "$role" == "development" ] ; then
+         output="$output \e[1;32m$role"
+    elif [ "$role" == "fallback" ] ; then
+         output="$output \e[1;33m$role"
+    elif [ "$role" == "productive" ] ; then
+         output="$output \e[1;31m$role"
     fi
     printf "$output\n"
 }
@@ -373,7 +378,7 @@ list_node_stores()
 list_node_re_merge_exceptions()
 {
     list_node $n
-    list_node_arrays ${remergeexceptions[@]}
+    list_node_arrays ${remergedirect[@]}
 }
 
 list_node_re_merge_custom()
@@ -451,7 +456,7 @@ re_merge_fix_in()
         suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
         prefix=${basename/.$suffix}
         [ -n "$suffix" ] && suffix=".$suffix"
-        $_mv $f $targetdir/$targetpath/${prefix}_${n}$suffix
+        $_mv $f $targetdir/$targetpath/${prefix}.${n}$suffix
     done
 }
 
@@ -465,7 +470,7 @@ re_merge_fix_pre()
         basename=$($_basename $f)
         fullpath=${f%%$basename}
         targetpath=${fullpath/$1}
-        $_mv $f $targetdir/$targetpath/${basename}_$n
+        $_mv $f $targetdir/$targetpath/${n}.${basename}
     done
 }
 
@@ -479,13 +484,13 @@ re_merge_fix_post()
         basename=$($_basename $f)
         fullpath=${f%%$basename}
         targetpath=${fullpath/$1}
-        $_mv $f $targetdir/$targetpath/${n}_$basename
+        $_mv $f $targetdir/$targetpath/${basename}.${in}
     done
 }
 
 re_merge_exceptions_first()
 {
-    for f in ${remergeexceptions[@]} ; do
+    for f in ${remergedirect[@]} ; do
         $_mv $2/$1/$f $2/$f
     done
 }
@@ -501,7 +506,7 @@ merge_all()
         src="$merge_only_this_subdir"
         trgt="$merge_only_this_subdir"
     fi
-    case "$default_merge_mode" in
+    case "$merge_mode" in
         dir|in|post|pre|custom)
             for d in ${storagedirs[@]} ; do
                 do_sync "$d/$src/" "$targetdir/$n/$trgt/"
@@ -515,7 +520,7 @@ merge_all()
                 $_mkdir -p $targetdir/${d/$t/}
             done
             re_merge_exceptions_first $n $targetdir
-            re_merge_fix_$default_merge_mode $t
+            re_merge_fix_$merge_mode $t
 
             t="${t}*"
 # TODO maybe we want to ask for what to do with links..
@@ -530,7 +535,7 @@ merge_all()
             re_merge_custom $targetdir/$n/
         ;;
         *)
-            die "merge mode '$default_merge_mode' is not supported.."
+            die "merge mode '$merge_mode' is not supported.."
         ;;
     esac
 }
@@ -591,14 +596,41 @@ case $1 in
     lss|list-storage)
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*      merge-all                       just merge all storage directories
-    merge*)
+#*      merge-all (mg)                  just merge all storage directories
+    merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
-##*      re-merge                        remerge as specified in '--merge mode'
+#*      merge-pre (mgpr)                merge storage dirs and prefix with
+#*                                      hostname
+    merge-pr*|mgpr)
+        merge_mode="pre"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*      merge-in (mgi)                  merge storage dirs and infix with
+#*                                      hostname
+    merge-i*|mgi)
+        merge_mode="in"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*      merge-post (mgpo)               merge storage dirs and postfix with
+#*                                      hostname
+    merge-po*|mgpo)
+        merge_mode="post"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+##*      re-merge                       remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
 #    ;;
+#*      reclass                         just wrap reclass
+    rec*)
+        if [ -n "$nodefilter" ] ; then
+            reclassmode="-n $nodefilter"
+        else
+            reclassmode="-i"
+        fi
+        $_reclass -b $inventorydir $reclassmode
+    ;;
     status)
         process_nodes connect_node ${nodes[@]}
     ;;
