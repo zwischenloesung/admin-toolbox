@@ -63,7 +63,7 @@ projectfilter=""
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
-sys_tools=( ["_awk"]="/usr/bin/awk"
+sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_basename"]="/usr/bin/basename"
             ["_cat"]="/bin/cat"
             ["_cp"]="/bin/cp"
@@ -226,21 +226,36 @@ environement=""
 project=""
 storagedirs=()
 remergedirect=()
-declare -A remergecustom
-remergecustom=()
+declare -A remergecustomsrc
+remergecustomsrc=()
+declare -A remergecustomdest
+remergecustomdest=()
 
 parse_node()
 {
+    # make sure they are empty
+    applications=()
+    classes=()
+    environement=""
+    project=""
+    storagedirs=()
+    remergedirect=()
+    remergecustomsrc=()
+    remergecustomdest=()
+
     awk_var_p_keys=";"
     awk_var_p_vals=";"
     for k in ${!projectdirs[@]} ; do
         awk_var_p_keys="$k;$awk_var_p_keys"
         awk_var_p_vals="${projectdirs[$k]};$awk_var_p_vals"
     done
-    awk_vars="-v p_len=${#projectdirs[@]} -v p_keys=$awk_var_p_keys -v p_vals=$awk_var_p_vals"
+    OLDIFS=$IFS
+    IFS="
+"
     eval $(\
         $_reclass -b $inventorydir -n $1 |\
-        $_awk $awk_vars \
+        $_awk -v p_len=${#projectdirs[@]} -v p_keys=$awk_var_p_keys \
+              -v p_vals=$awk_var_p_vals \
             'BEGIN {
                 hostname="'$hostname'"
                 domainname="'$domainname'"
@@ -250,7 +265,9 @@ parse_node()
                 for (i=1;i<=p_len;i++) {
                     projects[project_keys[i]]=project_vals[i]
                 }
+                metamode="reclass"
                 mode="none"
+                rckey=""
                 list=""
             }
             #sanitize input a little
@@ -265,57 +282,100 @@ parse_node()
                     gsub("_{{ "var" }}_", projects[var])
                 }
             }
-            !/^ *- |^    / {
-                if (mode!="none"){
+            !/^ *- / || /:$/ {
+                tmp=$0
+                sub("\\S.*", "", tmp)
+                numspaces=length(tmp)
+                tmp=metamode
+                numcolons=gsub(":", "", tmp)
+                if ( numcolons >= numspaces/2 ) {
+                    sub(":\\w*$", "", metamode)
+                }
+                if (( mode != "none" ) && ( list != "" )) {
                     print mode"=( "list" )"
                     mode="none"
                     list=""
                 }
             }
             /^  node:/ {
-                sub("/.*", "", $2)
-                print "project="$2
-                next
+                if ( metamode == "reclass" ) {
+                  sub("/.*", "", $2)
+                  print "project="$2
+                  next
+                }
             }
             /^applications:$/ {
+                metamode="none"
                 mode="applications"
                 next
             }
             /^classes:$/ {
+                metamode="none"
                 mode="classes"
                 next
             }
             /^environment:/ {
+                metamode="none"
                 mode="none"
                 print "environement="$2
                 next
             }
-            /^  role:/ {
+            /^parameters:/ {
+                metamode="parameters"
                 mode="none"
-                print "role="$2
+            }
+            /^  role:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "role="$2
+                }
                 next
             }
             /^  storage-dirs:$/ {
-                mode="storagedirs"
+                if ( metamode == "parameters" ) {
+                  mode="storagedirs"
+                }
                 next
             }
-            /^  re-merge-direct:$/ {
-                mode="remergedirect"
+            /^  re-merge:$/ {
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":remerge"
+                }
+            }
+            /^    direct:$/ {
+                if ( metamode == "parameters:remerge" ) {
+                  mode="remergedirect"
+                }
                 next
             }
-            /^  re-merge-custom:$/ {
-                mode="remergecustom"
+            /^    custom:$/ {
+                if ( metamode == "parameters:remerge" ) {
+                    metamode=metamode":custom"
+                    mode="remergecustom"
+                }
+                next
+            }
+            /^      .*:$/ {
+                if ( mode == "remergecustom" ) {
+                    rckey=$1
+                    sub(":", "", rckey)
+                }
+                next
+            }
+            /^        file: .*$/ {
+                if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    print "remergecustomsrc[\""rckey"\"]=\""$2"\""
+                }
+                next
+            }
+            /^        dest: .*$/ {
+                if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    print "remergecustomdest[\""rckey"\"]=\""$2"\""
+                }
                 next
             }
             /^ *- / {
                 list=list " " $2
-                next
-            }
-            /^    / {
-                if (mode == "remergecustom") {
-                    sub(":", "", $1)
-                    list=list " [\""$1"\"]=\""$2"\""
-                }
                 next
             }
             {
@@ -324,6 +384,7 @@ parse_node()
             END {
             }'
     )
+    IFS=$OLDIFS
 }
 
 connect_node()
@@ -384,13 +445,14 @@ list_node_re_merge_exceptions()
 list_node_re_merge_custom()
 {
     list_node $n
-    list_node_dict ${!remergecustom[@]}
+    list_re_merge_custom
 }
 
-list_node_dict()
+list_re_merge_custom()
 {
-    for m in $@ ; do
-        printf "\e[0;36m   $m: \e[0;35m ${remergecustom[$m]}\n"
+    for m in ${!remergecustomsrc[@]} ; do
+        printf "\e[0;33m - file: \e[0;35m${remergecustomsrc[$m]}\n"
+        printf "\e[0;33m   dest: \e[0;36m${remergecustomdest[$m]}\n"
     done
 }
 
@@ -434,11 +496,13 @@ re_merge_custom()
     #better safe than sorry
     [ -n "$1" ] || error "ERROR: Source directory was empty!"
     [ "${1/*$n*/XXX}" == "XXX" ] || error "ERROR: Source directory was $1"
-    for f in $($_find $1 -type f) ; do
-        k="/${f/$1}"
-        if [ -n "${remergecustom[$k]}" ] ; then
-            echo $_mkdir -p $($_dirname $targetdir/${remergecustom[$k]})
-            echo $_mv -i $f $targetdir/${remergecustom[$k]}
+
+    for m in ${!remergecustomsrc[@]} ; do
+
+        if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
+
+            $_mkdir -p ${remergecustomdest[$m]}
+            $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
         fi
     done
 }
@@ -584,45 +648,48 @@ case $1 in
             done
         done
     ;;
-#*      list-re-merge-customs (lsrc)    show custom merge rules
-    lsrc|list-rc*)
+#*      list-merge-customs (lsmc)    show custom merge rules
+    lsmc|list-merge-c*)
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*      list-re-merge-exceptions (lsre) show exceptions for merge modes
-    lsre|list-re*)
+#*      list-merge-exceptions (lsme) show exceptions for merge modes
+    lsme|list-merge-e*)
         process_nodes list_node_re_merge_exceptions ${nodes[@]}
     ;;
-#*      list-storage (lss)              show storage directories
+#*      list-storage (lss)           show storage directories
     lss|list-storage)
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*      merge-all (mg)                  just merge all storage directories
+#*      merge-all (mg)               just merge all storage directories
     merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-pre (mgpr)                merge storage dirs and prefix with
-#*                                      hostname
+#*      merge-custom (cmg)           merge after custom rules defined in reclass
+    merge-cu*|cmg)
+        merge_mode="custom"
+        process_nodes merge_all ${nodes[@]}
+    ;;
+#*      merge-pre (mgpr)             merge storage dirs and prefix with hostname
     merge-pr*|mgpr)
         merge_mode="pre"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-in (mgi)                  merge storage dirs and infix with
-#*                                      hostname
+#*      merge-in (mgi)               merge storage dirs and infix with hostname
     merge-i*|mgi)
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-post (mgpo)               merge storage dirs and postfix with
-#*                                      hostname
+#*      merge-post (mgpo)            merge storage dirs and postfix with
+#*                                   hostname
     merge-po*|mgpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
     ;;
-##*      re-merge                       remerge as specified in '--merge mode'
+#*      re-merge                    remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
 #    ;;
-#*      reclass                         just wrap reclass
+#*      reclass                      just wrap reclass
     rec*)
         if [ -n "$nodefilter" ] ; then
             reclassmode="-n $nodefilter"
@@ -631,7 +698,8 @@ case $1 in
         fi
         $_reclass -b $inventorydir $reclassmode
     ;;
-    status)
+#*      status (ss)                  test host by ssh and print distro
+    ss|status)
         process_nodes connect_node ${nodes[@]}
     ;;
     *)
