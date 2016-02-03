@@ -451,7 +451,8 @@ list_node_re_merge_custom()
 list_re_merge_custom()
 {
     for m in ${!remergecustomsrc[@]} ; do
-        printf "\e[0;33m - file: \e[0;35m${remergecustomsrc[$m]}\n"
+        printf "\e[1;33m - $m\n"
+        printf "\e[0;33m   file: \e[0;35m${remergecustomsrc[$m]}\n"
         printf "\e[0;33m   dest: \e[0;36m${remergecustomdest[$m]}\n"
     done
 }
