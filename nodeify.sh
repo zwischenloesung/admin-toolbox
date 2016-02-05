@@ -39,6 +39,9 @@ declare -A projectdirs
 conffile=~/.nodeify
 ### {{{
 
+# for status mode concentrate on this ip protocol
+ipprot="-4"
+
 # whether to take action
 dryrun=1
 # whether we must run as root
@@ -71,6 +74,7 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
+            ["_ip"]="/bin/ip"
             ["_lsb_release"]="/usr/bin/lsb_release"
             ["_mkdir"]="/bin/mkdir"
             ["_mv"]="/bin/mv"
@@ -391,13 +395,15 @@ connect_node()
 {
     list_node $n
     retval=0
-    answer=$( $_ssh $1 $_lsb_release -d 2>&1) || retval=$?
+    answer0=$( $_ssh $1 $_lsb_release -d 2>&1) || retval=$?
     if [ $retval -gt 127 ] ; then
-        printf " \e[1;31m$answer\n"
+        printf " \e[1;31m$answer0\n"
     elif [ $retval -gt 0 ] ; then
-        printf " \e[1;33m$answer\n"
+        printf " \e[1;33m$answer0\n"
     else
-        printf " \e[1;32m$answer\n"
+        answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
+        printf " \e[1;32m$answer0\n"
+        printf "\e[0;32m$answer1\n"
     fi
 }
 
