@@ -137,10 +137,10 @@ done
 
 [ -r "$conffile" ] && . $conffile
 
-#*  options:
+#* options:
 while true ; do
     case "$1" in
-#*      -c |--config conffile           alternative config file
+#*  -c |--config conffile           alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -149,45 +149,45 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
-#*      -h |--help                      print this help
+#*  -h |--help                      print this help
         -h|--help)
             print_help
             exit 0
         ;;
-#*      -m |--merge mode                specify how to merge, available modes:
-#*                                        custom based on "re-merge-custom:"
-#*                                        dir    nodename based dirs (default)
-#*                                        in     nodename infixed files
-#*                                        pre    nodename prefixed files
-#*                                        post   nodename postfixed files
+#*  -m |--merge mode                specify how to merge, available modes:
+#*                                    custom based on "re-merge-custom:"
+#*                                    dir    nodename based dirs (default)
+#*                                    in     nodename infixed files
+#*                                    pre    nodename prefixed files
+#*                                    post   nodename postfixed files
         -m|--merge)
             shift
             merge_mode=$1
         ;;
-#*      -n |--dry-run                   do not change anything
+#*  -n |--dry-run                   do not change anything
         -n|--dry-run)
             dryrun=0
         ;;
-#*      -N |--node node                 only process a certain node
+#*  -N |--node node                 only process a certain node
         -N|--node)
             shift
             nodefilter="$1"
         ;;
-#*      -P |--project project           only process nodes from this project
+#*  -P |--project project           only process nodes from this project
         -P|--project)
             shift
             projectfilter="$1"
         ;;
-#*      -r |--rsync-dry-run
+#*  -r |--rsync-dry-run
         -r|--rsync-dry-run)
             rsync_options="$rsync_options -n"
         ;;
-#*      -s |--subdir-only-merge         concentrate on this subdir only
+#*  -s |--subdir-only-merge         concentrate on this subdir only
         -s|--subdir-only-merge)
             shift
             merge_only_this_subdir=$1
         ;;
-#*      -v |--version
+#*  -v |--version
         -v|--version)
             print_version
             exit
@@ -625,17 +625,17 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
                    /^  \w/ {if (node == 0) {print now $0}}' |\
             $_tr -d ":" ) )
 
-#*  actions:
+#* actions:
 case $1 in
-#*      help                            print this help
+#*  help                            print this help
     help)
         print_help
     ;;
-#*      list (ls)                       list nodes
+#*  list (ls)                       list nodes
     ls|list*)
         process_nodes list_node ${nodes[@]}
     ;;
-#*      list-applications (lsa)         show hosts sorted by application
+#*  list-applications (lsa)         show hosts sorted by application
     lsa|list-a*)
         process_nodes list_applications ${nodes[@]}
         for a in ${!applications_dict[@]} ; do
@@ -645,7 +645,7 @@ case $1 in
             done
         done
     ;;
-#*      list-classes (lsc)              show hosts sorted by class
+#*  list-classes (lsc)              show hosts sorted by class
     lsc|list-c*)
         process_nodes list_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
@@ -655,48 +655,48 @@ case $1 in
             done
         done
     ;;
-#*      list-merge-customs (lsmc)    show custom merge rules
+#*  list-merge-customs (lsmc)       show custom merge rules
     lsmc|list-merge-c*)
         process_nodes list_node_re_merge_custom ${nodes[@]}
     ;;
-#*      list-merge-exceptions (lsme) show exceptions for merge modes
+#*  list-merge-exceptions (lsme)    show exceptions for merge modes
     lsme|list-merge-e*)
         process_nodes list_node_re_merge_exceptions ${nodes[@]}
     ;;
-#*      list-storage (lss)           show storage directories
+#*  list-storage (lss)              show storage directories
     lss|list-storage)
         process_nodes list_node_stores ${nodes[@]}
     ;;
-#*      merge-all (mg)               just merge all storage directories
+#*  merge-all (mg)                  just merge all storage directories
     merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-custom (cmg)           merge after custom rules defined in reclass
+#*  merge-custom (cmg)              merge after custom rules defined in reclass
     merge-cu*|cmg)
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-pre (mgpr)             merge storage dirs and prefix with hostname
+#*  merge-pre (mgpr)                merge storage dirs and prefix with hostname
     merge-pr*|mgpr)
         merge_mode="pre"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-in (mgi)               merge storage dirs and infix with hostname
+#*  merge-in (mgi)                  merge storage dirs and infix with hostname
     merge-i*|mgi)
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      merge-post (mgpo)            merge storage dirs and postfix with
-#*                                   hostname
+#*  merge-post (mgpo)               merge storage dirs and postfix with
+#*                                  hostname
     merge-po*|mgpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*      re-merge                    remerge as specified in '--merge mode'
+#*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
 #    ;;
-#*      reclass                      just wrap reclass
+#*  reclass                         just wrap reclass
     rec*)
         if [ -n "$nodefilter" ] ; then
             reclassmode="-n $nodefilter"
@@ -705,7 +705,7 @@ case $1 in
         fi
         $_reclass -b $inventorydir $reclassmode
     ;;
-#*      status (ss)                  test host by ssh and print distro
+#*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
         process_nodes connect_node ${nodes[@]}
     ;;
