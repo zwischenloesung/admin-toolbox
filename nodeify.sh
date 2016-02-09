@@ -639,7 +639,7 @@ case $1 in
     lsa|list-a*)
         process_nodes list_applications ${nodes[@]}
         for a in ${!applications_dict[@]} ; do
-            printf "\e[1;39m[$a]\n"
+            printf "\e[1;34m[$a]\n"
             for h in ${applications_dict[$a]//:/ } ; do
                 printf "\e[0;32m$h\n"
             done
@@ -649,7 +649,7 @@ case $1 in
     lsc|list-c*)
         process_nodes list_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
-            printf "\e[1;39m[$a]\n"
+            printf "\e[1;35m[$a]\n"
             for h in ${classes_dict[$a]//:/ } ; do
                 printf "\e[0;32m$h\n"
             done
