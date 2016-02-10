@@ -508,7 +508,7 @@ re_merge_custom()
 
         if [ -e "$1/${remergecustomsrc[$m]}" ] ; then
 
-            $_mkdir -p ${remergecustomdest[$m]}
+            $_mkdir -p ${remergecustomdest[$m]%/*}
             $_cp $1/${remergecustomsrc[$m]} ${remergecustomdest[$m]}
         fi
     done
