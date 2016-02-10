@@ -336,6 +336,12 @@ parse_node()
                 }
                 next
             }
+            /^  debian_.*_packages:$/ {
+                if ( metamode == "parameters" ) {
+                  mode=substr($1, 0, length($1)-1)
+                }
+                next
+            }
             /^  storage-dirs:$/ {
                 if ( metamode == "parameters" ) {
                   mode="storagedirs"
