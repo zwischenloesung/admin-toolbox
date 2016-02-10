@@ -292,8 +292,9 @@ parse_node()
                 numspaces=length(tmp)
                 tmp=metamode
                 numcolons=gsub(":", "", tmp)
-                if ( numcolons >= numspaces/2 ) {
+                while ( numcolons >= numspaces/2 ) {
                     sub(":\\w*$", "", metamode)
+                    numcolons--
                 }
                 if (( mode != "none" ) && ( list != "" )) {
                     print mode"=( "list" )"
