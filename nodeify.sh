@@ -243,7 +243,9 @@ parse_node()
     classes=()
     environement=""
     os_name=""
-    os_version=""
+    os_codename=""
+    os_distro=""
+    os_release=""
     project=""
     storagedirs=()
     remergedirect=()
@@ -339,10 +341,24 @@ parse_node()
                 }
                 next
             }
-            /^  os-version:/ {
+            /^  os-distro:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
-                  print "os_version="$2
+                  print "os_distro="$2
+                }
+                next
+            }
+            /^  os-codename:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_codename="$2
+                }
+                next
+            }
+            /^  os-release:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_release="$2
                 }
                 next
             }
@@ -419,14 +435,53 @@ connect_node()
 {
     list_node $n
     retval=0
-    answer0=$( $_ssh $1 $_lsb_release -d 2>&1) || retval=$?
+    remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
+    remote_os_distro=${remote_os[1]}
+    remote_os_name=${remote_os[2]}
+    remote_os_release=${remote_os[3]}
+    remote_os_codename=${remote_os[4]}
+    answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
     if [ $retval -gt 127 ] ; then
-        printf " \e[1;31m$answer0\n"
+        printf " \e[1;31m${answer0}\n"
     elif [ $retval -gt 0 ] ; then
-        printf " \e[1;33m$answer0\n"
+        printf " \e[1;33m${answer0}\n"
     else
+        distro_color="\e[0;32m"
+        os_color="\e[0;32m"
+        release_color="\e[0;32m"
+        codename_color="\e[0;32m"
+        if [ -n "$os_distro" ] ; then
+            comp0=$( echo $remote_os_distro | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_distro | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                distro_color="\e[1;32m"
+            else
+                distro_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_release" ] ; then
+            comp0=$( echo $remote_os_release | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_release | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "$comp1" ] ; then
+                release_color="\e[1;32m"
+            else
+                release_color="\e[1;31m"
+            fi
+        fi
+        if [ -n "$os_codename" ] ; then
+            comp0=$( echo $remote_os_codename | $_sed 's;.*;\L&;' )
+            comp1=$( echo $os_codename | $_sed 's;.*;\L&;' )
+            if [ "$comp0" == "($comp1)" ] ; then
+                codename_color="\e[1;32m"
+            else
+                codename_color="\e[1;31m"
+            fi
+        fi
+        printf "  $distro_color$remote_os_distro"
+        printf " $os_color$remote_os_name"
+        printf " $release_color$remote_os_release"
+        printf " $codename_color$remote_os_codename\n"
         answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
-        printf " \e[1;32m$answer0\n"
         printf "\e[0;32m$answer1\n"
     fi
 }
@@ -457,14 +512,22 @@ list_node()
     elif [ "$role" == "productive" ] ; then
          output="$output \e[1;31m$role"
     fi
-    output="$output \e[1;34m($os_name-$os_version)"
-    printf "$output\n"
+    if [ -n "$os_distro" ] && [ -n "$os_codename" ] &&
+            [ -n "$os_release" ] ; then
+        os_output="\e[1;34m($os_distro-$os_codename $os_release)"
+    elif [ -n "$os_distro" ] && [ -n "$os_codename" ] ; then
+        os_output="\e[1;34m($os_distro-$os_codename)"
+    elif [ -n "$os_distro" ] && [ -n "$os_release" ] ; then
+        os_output="\e[1;34m($os_distro $os_release)"
+    fi
+    output="$output $os_output"
+    printf "$output\e[0;39m\n"
 }
 
 list_distro_packages()
 {
     list_node $n
-    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') ) 
+    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') )
     ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
     ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
     for p in ${ps[@]} ; do
