@@ -468,7 +468,15 @@ list_distro_packages()
     ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
     ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
     for p in ${ps[@]} ; do
-        printf "\e[0;39m - ${p}\n"
+        printf "\e[0;33m - ${p}\n"
+    done
+}
+
+list_applications()
+{
+    list_node $n
+    for a in ${applications[@]} ; do
+        printf "\e[0;33m - $a\n"
     done
 }
 
@@ -511,7 +519,7 @@ list_node_arrays()
 }
 
 declare -A applications_dict
-list_applications()
+process_applications()
 {
     for a in ${applications[@]} ; do
         applications_dict[$a]=$n:${applications_dict[$a]}
@@ -519,7 +527,7 @@ list_applications()
 }
 
 declare -A classes_dict
-list_classes()
+process_classes()
 {
     for c in ${classes[@]} ; do
         classes_dict[$c]=$n:${classes_dict[$c]}
@@ -663,6 +671,16 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
+#*  applications-list (als)         show applications sorted by hosts
+    als|app*)
+        process_nodes process_applications ${nodes[@]}
+        for a in ${!applications_dict[@]} ; do
+            printf "\e[1;34m[$a]\n"
+            for h in ${applications_dict[$a]//:/ } ; do
+                printf "\e[0;32m$h\n"
+            done
+        done
+    ;;
 #*  help                            print this help
     help)
         print_help
@@ -674,15 +692,9 @@ case $1 in
 #*  list-applications (lsa)         show hosts sorted by application
     lsa|list-a*)
         process_nodes list_applications ${nodes[@]}
-        for a in ${!applications_dict[@]} ; do
-            printf "\e[1;34m[$a]\n"
-            for h in ${applications_dict[$a]//:/ } ; do
-                printf "\e[0;32m$h\n"
-            done
-        done
     ;;
-#*  list-classes (lsc)              show hosts sorted by class
-    lsc|list-c*)
+#*  classes-list (cls)              show hosts sorted by class
+    cls|class*)
         process_nodes list_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
             printf "\e[1;35m[$a]\n"
