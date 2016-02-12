@@ -85,6 +85,7 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_rsync"]="/usr/bin/rsync"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
+            ["_sort"]="/usr/bin/sort"
             ["_ssh"]="/usr/bin/ssh"
             ["_tr"]="/usr/bin/tr"
             ["_wc"]="/usr/bin/wc" )
@@ -241,6 +242,8 @@ parse_node()
     applications=()
     classes=()
     environement=""
+    os_name=""
+    os_version=""
     project=""
     storagedirs=()
     remergedirect=()
@@ -328,6 +331,20 @@ parse_node()
             /^parameters:/ {
                 metamode="parameters"
                 mode="none"
+            }
+            /^  os:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_name="$2
+                }
+                next
+            }
+            /^  os-version:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_version="$2
+                }
+                next
             }
             /^  role:/ {
                 if ( metamode == "parameters" ) {
@@ -440,7 +457,19 @@ list_node()
     elif [ "$role" == "productive" ] ; then
          output="$output \e[1;31m$role"
     fi
+    output="$output \e[1;34m($os_name-$os_version)"
     printf "$output\n"
+}
+
+list_distro_packages()
+{
+    list_node $n
+    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') ) 
+    ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
+    ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
+    for p in ${ps[@]} ; do
+        printf "\e[0;39m - ${p}\n"
+    done
 }
 
 list_node_stores()
@@ -661,6 +690,9 @@ case $1 in
                 printf "\e[0;32m$h\n"
             done
         done
+    ;;
+    lsp)
+        process_nodes list_distro_packages ${nodes[@]}
     ;;
 #*  list-merge-customs (lsmc)       show custom merge rules
     lsmc|list-merge-c*)
