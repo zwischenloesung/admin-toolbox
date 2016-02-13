@@ -758,7 +758,7 @@ case $1 in
     ;;
 #*  classes-list (cls)              show hosts sorted by class
     cls|class*)
-        process_nodes list_classes ${nodes[@]}
+        process_nodes process_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
             printf "\e[1;35m[$a]\n"
             for h in ${classes_dict[$a]//:/ } ; do
