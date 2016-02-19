@@ -540,6 +540,8 @@ list_node()
          output="$output \e[1;33m$role"
     elif [ "$role" == "productive" ] ; then
          output="$output \e[1;31m$role"
+    else
+         output="$output \e[1;39m$role"
     fi
     if [ -n "$os_distro" ] && [ -n "$os_codename" ] &&
             [ -n "$os_release" ] ; then
