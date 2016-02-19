@@ -228,6 +228,9 @@ done
 applications=()
 classes=()
 environement=""
+hostinfrastructure=""
+hostlocation=""
+hosttype=""
 project=""
 storagedirs=()
 remergedirect=()
@@ -242,6 +245,9 @@ parse_node()
     applications=()
     classes=()
     environement=""
+    hostinfrastructure=""
+    hostlocation=""
+    hosttype=""
     os_name=""
     os_codename=""
     os_distro=""
@@ -359,6 +365,29 @@ parse_node()
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_release="$2
+                }
+                next
+            }
+            /^  host-infrastructure:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hostinfrastructure=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  host-location:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  l=length($1)
+                  print "hostlocation=\""substr($0, l+4)"\""
+                }
+                next
+            }
+            /^  host-type:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "hosttype="$2
                 }
                 next
             }
@@ -559,6 +588,19 @@ list_node_re_merge_custom()
 {
     list_node $n
     list_re_merge_custom
+}
+
+list_node_type()
+{
+    list_node $n
+    printf "\e[0;33m This host is a \e[1;33m${hosttype}\e[0;33m.\n"
+    [ -n "$hostinfrastructure" ] &&
+        printf " It is running on \e[1;33m${hostinfrastructure}\e[0;33m.\n" ||
+        true
+    [ -n "$hostlocation" ] &&
+        printf " The ${hosttype} is located at "
+        printf "\e[1;33m$hostlocation\e[0;33m.\n" ||
+        true
 }
 
 list_re_merge_custom()
@@ -780,6 +822,10 @@ case $1 in
 #*  list-storage (lss)              show storage directories
     lss|list-storage)
         process_nodes list_node_stores ${nodes[@]}
+    ;;
+#*  list-types (lst)                show maschine type and location
+    lst|list-types)
+        process_nodes list_node_type ${nodes[@]}
     ;;
 #*  merge-all (mg)                  just merge all storage directories
     merge|merge-a*|mg)
