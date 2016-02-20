@@ -867,6 +867,14 @@ case $1 in
         fi
         $_reclass -b $inventorydir $reclassmode
     ;;
+#*  search parameter                show in which file a parameter is configured
+    search)
+        shift
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/nodes
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/classes
+    ;;
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
         process_nodes connect_node ${nodes[@]}
