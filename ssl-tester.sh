@@ -25,6 +25,8 @@
 
 dryrun=1
 needsroot=1
+protocols="no_ssl2 no_ssl3 no_tls1"
+latest_protocol="tls1_2"
 ciphers=''
 verbose=0
 
@@ -127,6 +129,16 @@ while true ; do
 #        -n|--dry-run)
 #            dryrun=0
 #        ;;
+#*      -p |--protocols 'list'      a space separated list of protocol options
+#*                                  e.g. -no_ssl3 (see 'man s_client')
+        -p|--protocols)
+            shift
+            protocols="$1"
+        ;;
+#*      -P |--latest-protocol       use only latest protocol
+        -P|--latest*)
+            protocols="$latest_protocol"
+        ;;
 #*      -q |--quiet                 contrary of verbose (see config)
         -q|--quiet)
             verbose=1
@@ -181,12 +193,12 @@ port=${3:-443}
 
 connect()
 {
-    $_openssl s_client $3 $starttls -connect $1:$2 2>&1
+    $_openssl s_client $3 $starttls $ssl_protocols -connect $1:$2 2>&1
 }
 
 try_connect()
 {
-    echo "" | $_openssl s_client $3 $starttls -connect $1:$2 2>&1
+    echo "" | $_openssl s_client $3 $starttls $ssl_protocols -connect $1:$2 2>&1
 }
 
 list_ciphers()
@@ -222,6 +234,11 @@ print_hostnames()
     get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
         $_grep -e "Subject:" -e "DNS:"
 }
+
+ssl_protocols=""
+for p in $protocols ; do
+    ssl_protocols="$ssl_protocols -$p"
+done
 
 #* actions:
 case $1 in
