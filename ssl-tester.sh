@@ -25,8 +25,15 @@
 
 dryrun=1
 needsroot=1
-protocols="no_ssl2 no_ssl3 no_tls1"
-latest_protocol="tls1_2"
+# list all available protocols that might be tested
+protocol_list="ssl3 tls1 tls1_1 tls1_2"
+# protocol settings to use in default tests
+protocol_prefs="no_ssl2 no_ssl3 no_tls1"
+# considered ok
+ok_protocols="tls1"
+# considered safe
+safe_protocols="tls1_1 tls1_2"
+# cipher suite to use in default tests
 ciphers=''
 verbose=0
 
@@ -133,11 +140,11 @@ while true ; do
 #*                                  e.g. -no_ssl3 (see 'man s_client')
         -p|--protocols)
             shift
-            protocols="$1"
+            protocol_prefs="$1"
         ;;
-#*      -P |--latest-protocol       use only latest protocol
-        -P|--latest*)
-            protocols="$latest_protocol"
+#*      -P |--safe-protocol         test only protocols considered "safe"
+        -P|--safe*)
+            protocol_prefs="$safe_protocols"
         ;;
 #*      -q |--quiet                 contrary of verbose (see config)
         -q|--quiet)
@@ -236,7 +243,7 @@ print_hostnames()
 }
 
 ssl_protocols=""
-for p in $protocols ; do
+for p in $protocol_prefs ; do
     ssl_protocols="$ssl_protocols -$p"
 done
 
@@ -257,7 +264,8 @@ case $1 in
             else
                 if [ $verbose -eq 0 ] ; then
                     res=$( echo -n $res | cut -d':' -f6)
-                    echo -e "\e[0;39m[\e[1;31m*\e[0;39m] $c \e[0;33m$res"
+#TODO add a list of safe/ok ciphers, like in protocols
+                    echo -e "\e[0;39m[ ] $c \e[0;33m$res"
                 fi
             fi
         done
@@ -309,6 +317,44 @@ case $1 in
     print-sum*|sum)
         print_summary $host $port
     ;;
+#*      protocols                   test the protocol support on a server
+    prot*)
+        for p in $protocol_list ; do
+            ssl_protocols="-$p"
+            retval=0
+            res=$(try_connect $host $port) || retval=1
+            safeval=2
+            for s in $safe_protocols ; do
+                if [ "$s" == "$p" ] ; then
+                    safeval=0
+                    break
+                fi
+            done
+            if [ $safeval -gt 0 ] ; then
+                for s in $ok_protocols ; do
+                    if [ "$s" == "$p" ] ; then
+                        safeval=1
+                        break
+                    fi
+                done
+            fi
+            if [ $retval -eq 0 ] ; then
+                if [ $safeval -eq 0 ] ; then
+                    color="\e[1;32m"
+                elif [ $safeval -eq 1 ] ; then
+                    color="\e[1;33m"
+                elif [ $safeval -eq 2 ] ; then
+                    color="\e[1;31m"
+                fi
+                echo -e "\e[0;39m[$color*\e[1;39m] $p"
+            else
+                if [ $verbose -eq 0 ] ; then
+                    res=$( echo -n $res | cut -d':' -f6)
+                    echo -e "\e[0;39m[ ] $p \e[0;33m$res"
+                fi
+            fi
+        done
+        ;;
     *)
         error "not supported.."
         ;;
