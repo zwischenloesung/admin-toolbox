@@ -248,7 +248,7 @@ parse_node()
     hostinfrastructure=""
     hostlocation=""
     hosttype=""
-    os_name=""
+    os_type=""
     os_codename=""
     os_distro=""
     os_release=""
@@ -340,10 +340,10 @@ parse_node()
                 metamode="parameters"
                 mode="none"
             }
-            /^  os:/ {
+            /^  os-type:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
-                  print "os_name="$2
+                  print "os_type="$2
                 }
                 next
             }
@@ -466,7 +466,7 @@ connect_node()
     retval=0
     remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
     remote_os_distro=${remote_os[1]}
-    remote_os_name=${remote_os[2]}
+    remote_os_type=${remote_os[2]}
     remote_os_release=${remote_os[3]}
     remote_os_codename=${remote_os[4]}
     answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
@@ -507,7 +507,7 @@ connect_node()
             fi
         fi
         printf "  $distro_color$remote_os_distro"
-        printf " $os_color$remote_os_name"
+        printf " $os_color$remote_os_type"
         printf " $release_color$remote_os_release"
         printf " $codename_color$remote_os_codename\n"
         answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
@@ -558,8 +558,8 @@ list_node()
 list_distro_packages()
 {
     list_node $n
-    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') )
-    ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
+    ps=( $(eval 'echo ${'${os_type}'__packages[@]}') )
+    ps=( ${ps[@]} $(eval 'echo ${'${os_type}'_'${os_version}'_packages[@]}') )
     ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
     for p in ${ps[@]} ; do
         printf "\e[0;33m - ${p}\n"
