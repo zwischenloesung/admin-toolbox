@@ -137,7 +137,7 @@ while true ; do
 #            dryrun=0
 #        ;;
 #*      -p |--protocols 'list'      a space separated list of protocol options
-#*                                  e.g. -no_ssl3 (see 'man s_client')
+#*                                  e.g. 'no_ssl3' (see `man s_client`)
         -p|--protocols)
             shift
             protocol_prefs="$1"
