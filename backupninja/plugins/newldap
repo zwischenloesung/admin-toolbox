@@ -1,0 +1,79 @@
+# -*- mode: sh; sh-basic-offset: 3; indent-tabs-mode: nil; -*-
+# vim: set filetype=sh sw=3 sts=3 expandtab autoindent:
+#
+# homemade ldap backup for new config style: action
+# feedback: michael.lustenberger at inofix.ch
+
+setsection system
+getconf ldapsearch "/usr/bin/ldapsearch"
+getconf gzip "/bin/gzip"
+getconf bzip2 "/bin/bzip2"
+getconf mkdir "/bin/mkdir"
+
+setsection source
+getconf method none
+getconf saslmech none
+getconf ldapsocket none
+getconf binddn none
+
+setsection dest
+getconf compress no
+getconf destdir none
+
+case $method in
+    ldapsearch)
+        execute="$ldapsearch "
+        if [ "$saslmech" != "none" ]; then
+            execute="$execute -Y $saslmech"
+        fi
+        if [ "$ldapsocket" != "none" ]; then
+            execute="$execute -H $ldapsocket"
+        fi
+        if [ "$binddn" != "none" ]; then
+            execute="$execute -b '$bindd'"
+        fi
+        readonly="$execute -LLL objectClass=organization"
+        if [ "$destdir" != "none" ]; then
+            case $compress in
+                yes|gzip|gz)
+                    filename="$destdir/ldap.ldif.gz"
+                    execute="$execute | $gzip > $filename"
+                ;;
+                bzip2|bz2)
+                    filename="$destdir/ldap.ldif.bz2"
+                    execute="$execute | $bzip2 > $filename"
+                ;;
+                *)
+                    filename="$destdir/ldap.ldif"
+                    execute="$execute > $filename"
+                ;;
+            esac
+        else
+            fatal "no destination directory specified."
+        fi
+    ;;
+    *)
+        fatal "method not supported (yet ?).."
+    ;;
+esac
+
+if [ $test ]; then
+    debug 1 "only joking.."
+    [ -d "$destdir" ] || info "fake-creating destdir: $mkdir -p $destdir"
+    debug "testing ldap: $readonly"
+    $readonly || fatal "could not access ldap.."
+    debug "fake-executing: $execute"
+else
+    debug 1 "making backup.."
+    [ -d "$destdir" ] || $mkdir -p $destdir
+    [ -d "$destdir" ] || fatal "could not create $destdir"
+    debug "testing ldap: $readonly"
+    $readonly || fatal "could not access ldap.."
+    debug "dump ldap: $execute"
+    out=$(su root -c "set -o pipefail ; $execute" 2>&1) ; retval=$?
+    if [ $retval -ne 0 ] ; then
+        debug $out
+        fatal "failed to export ldif to $destdir: $retval"
+    fi
+fi
+

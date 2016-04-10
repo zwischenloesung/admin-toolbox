@@ -1,0 +1,87 @@
+# general rules for organizing data
+#
+[remote]
+
+# from where to where: local, push, pull
+direction = local
+
+# what remote user might be used to connect
+#user =
+
+# which server to use
+#server =
+
+# if you want to use an none standart ssh port and you do not have it in the
+# ssh config - you still need preshared key or the like, thought..
+#port = none
+
+# custom rsyncoptions
+rsyncoptions = -vrlptD --delete
+
+# what is there to be collected
+#
+[source]
+
+# directory
+sourcedir = /var/lib/mybackup/out
+
+# files to exclude from the backup
+exclude = *.cfsaved
+exclude = no_backup.*
+exclude = nobackup.*
+
+# for seperately remembering e.g. owner group - not atomic! (performed after rsync)
+seperateperms = yes
+
+# where do we store it now..
+#
+[dest]
+
+# directory under which the backups will be collected (should be absolute..)
+destdir = /var/lib/backup/collect/
+
+# relative directory name below the path above (default is the hostname)
+#reldir = none
+
+# owner of the destination if not the one backupninja runs as..
+# (meaningful only for 'local' and 'pull' - do not forget to adjust rsyncoptions "-a")
+#owner =
+
+# You can also specify some system comands if you don't want the default system values
+# by enabling the section below.
+#
+#[system]
+# bash
+#bash = bash
+#
+# mkdir command
+#mkdir = mkdir
+#
+# rm command
+#rm = rm
+#
+# cp command
+#cp = cp
+#
+# touch command
+#touch = touch
+#
+# mv command
+#mv = mv
+#
+# rsync command
+#rsync = rsync
+#
+# ssh command
+#ssh = ssh
+#
+# find command
+#find = find
+#
+# cat command
+#cat = cat
+#
+# chown command
+#chown = chown
+
+

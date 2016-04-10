@@ -1,0 +1,25 @@
+# homemade ldap backup for new config style: config
+
+[source]
+
+# method: only ldapsearch supported yet
+method = ldapsearch
+
+# mechanism: only EXTERNAL supported yet
+saslmech = EXTERNAL
+
+# set socket
+ldapsocket = ldapi://
+
+# how to bind to ldap
+binddn =
+
+[dest]
+
+# compress it or not?
+compress = bzip2
+
+# where to store the result
+destdir = /var/lib/backup/out/
+
+
