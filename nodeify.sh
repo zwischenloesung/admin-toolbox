@@ -286,7 +286,7 @@ parse_node()
                 list=""
             }
             #sanitize input a little
-            /<|>|\$|\|/ {
+            /<|>|\$|\|`/ {
                 next
             }
             /_{{ .* }}_/ {
