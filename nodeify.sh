@@ -883,9 +883,9 @@ case $1 in
     search)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/nodes
+        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/classes
+        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/classes || true
     ;;
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
