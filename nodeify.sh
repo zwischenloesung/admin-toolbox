@@ -289,12 +289,12 @@ parse_node()
             /<|>|\$|\|`/ {
                 next
             }
-            /_{{ .* }}_/ {
-                gsub("_{{ hostname }}_", hostname)
-                gsub("_{{ domainname }}_", domainname)
-                gsub("_{{ fqdn }}_", fqdn)
+            /{{ .* }}/ {
+                gsub("{{ hostname }}", hostname)
+                gsub("{{ domainname }}", domainname)
+                gsub("{{ fqdn }}", fqdn)
                 for (var in projects) {
-                    gsub("_{{ "var" }}_", projects[var])
+                    gsub("{{ "var" }}", projects[var])
                 }
             }
             !/^ *- / || /:$/ {
