@@ -248,7 +248,7 @@ parse_node()
     hostinfrastructure=""
     hostlocation=""
     hosttype=""
-    os_type=""
+    os_name=""
     os_codename=""
     os_distro=""
     os_release=""
@@ -340,10 +340,10 @@ parse_node()
                 metamode="parameters"
                 mode="none"
             }
-            /^  os-type:/ {
+            /^  os:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
-                  print "os_type="$2
+                  print "os_name="$2
                 }
                 next
             }
@@ -466,7 +466,7 @@ connect_node()
     retval=0
     remote_os=( $( $_ssh $1 $_lsb_release -d 2>/dev/null) ) || retval=$?
     remote_os_distro=${remote_os[1]}
-    remote_os_type=${remote_os[2]}
+    remote_os_name=${remote_os[2]}
     remote_os_release=${remote_os[3]}
     remote_os_codename=${remote_os[4]}
     answer0="${remote_os[1]} ${remote_os[2]} ${remote_os[3]} ${remote_os[4]}"
@@ -507,7 +507,7 @@ connect_node()
             fi
         fi
         printf "  $distro_color$remote_os_distro"
-        printf " $os_color$remote_os_type"
+        printf " $os_color$remote_os_name"
         printf " $release_color$remote_os_release"
         printf " $codename_color$remote_os_codename\n"
         answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
@@ -558,8 +558,8 @@ list_node()
 list_distro_packages()
 {
     list_node $n
-    ps=( $(eval 'echo ${'${os_type}'__packages[@]}') )
-    ps=( ${ps[@]} $(eval 'echo ${'${os_type}'_'${os_version}'_packages[@]}') )
+    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') )
+    ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
     ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
     for p in ${ps[@]} ; do
         printf "\e[0;33m - ${p}\n"
@@ -571,6 +571,14 @@ list_applications()
     list_node $n
     for a in ${applications[@]} ; do
         printf "\e[0;33m - $a\n"
+    done
+}
+
+list_classes()
+{
+    list_node $n
+    for c in ${classes[@]} ; do
+        printf "\e[0;33m - $c\n"
     done
 }
 
@@ -778,7 +786,7 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
-#*  applications-list (als)         show applications sorted by hosts
+#*  applications-list (als)         list hosts sorted by applications
     als|app*)
         process_nodes process_applications ${nodes[@]}
         for a in ${!applications_dict[@]} ; do
@@ -796,11 +804,15 @@ case $1 in
     ls|list*)
         process_nodes list_node ${nodes[@]}
     ;;
-#*  list-applications (lsa)         show hosts sorted by application
+#*  list-applications (lsa)         list applications sorted by hosts
     lsa|list-a*)
         process_nodes list_applications ${nodes[@]}
     ;;
-#*  classes-list (cls)              show hosts sorted by class
+#*  list-classes (lsc)              list classes sorted by hosts
+    lsc|list-c*)
+        process_nodes list_classes ${nodes[@]}
+    ;;
+#*  classes-list (cls)              list hosts sorted by class
     cls|class*)
         process_nodes process_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
@@ -829,28 +841,28 @@ case $1 in
     lst|list-types)
         process_nodes list_node_type ${nodes[@]}
     ;;
-#*  merge-all (mg)                  just merge all storage directories
+#*  merge-all (mg)                  just merge all storage directories - flat
     merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-custom (cmg)              merge after custom rules defined in reclass
-    merge-cu*|cmg)
+#*  merge-custom (mc)               merge after custom rules defined in reclass
+    merge-cu*|mc)
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-pre (mgpr)                merge storage dirs and prefix with hostname
-    merge-pr*|mgpr)
+#*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
+    merge-pr*|mpr)
         merge_mode="pre"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-in (mgi)                  merge storage dirs and infix with hostname
-    merge-i*|mgi)
+#*  merge-in (mi)                   merge storage dirs and infix with hostname
+    merge-i*|mi)
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-post (mgpo)               merge storage dirs and postfix with
+#*  merge-post (mpo)                merge storage dirs and postfix with
 #*                                  hostname
-    merge-po*|mgpo)
+    merge-po*|mpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
     ;;
