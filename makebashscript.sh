@@ -277,7 +277,7 @@ if [ \$needsroot -eq 0 ] ; then
 
             _pre="\$_pre \$_sudo"
         else
-            error "Missing system tool: \$_sudo must be installed."
+            error "Priviledges missing: use \${_sudo}."
         fi
     fi
 fi
