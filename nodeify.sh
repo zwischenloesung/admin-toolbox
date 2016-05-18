@@ -57,6 +57,7 @@ merge_mode="dir"
 inventorydir=""
 targetdir=""
 
+projectdirs=()
 ### }}}
 
 # Unsetting this helper variables (sane defaults)
@@ -437,12 +438,14 @@ parse_node()
             }
             /^        file: .*$/ {
                 if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    gsub("\047", "");
                     print "remergecustomsrc[\""rckey"\"]=\""$2"\""
                 }
                 next
             }
             /^        dest: .*$/ {
                 if (( mode == "remergecustom" ) && ( rckey != "" )) {
+                    gsub("\047", "");
                     print "remergecustomdest[\""rckey"\"]=\""$2"\""
                 }
                 next
@@ -506,12 +509,12 @@ connect_node()
                 codename_color="\e[1;31m"
             fi
         fi
-        printf "  $distro_color$remote_os_distro"
-        printf " $os_color$remote_os_name"
-        printf " $release_color$remote_os_release"
-        printf " $codename_color$remote_os_codename\n"
+        printf "  $distro_color$remote_os_distro\e[0;39m"
+        printf " $os_color$remote_os_name\e[0;39m"
+        printf " $release_color$remote_os_release\e[0;39m"
+        printf " $codename_color$remote_os_codename\n\e[0;39m"
         answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
-        printf "\e[0;32m$answer1\n"
+        printf "\e[0;32m$answer1\n\e[0;39m"
     fi
 }
 
@@ -770,6 +773,7 @@ merge_all()
     esac
 }
 
+[ -d "$inventorydir/nodes" ] || error "reclass environment not found at $inventorydir/nodes"
 reclass_filter=""
 if [ -n "$projectfilter" ] ; then
     if [ -d "$inventorydir/nodes/$projectfilter" ] ; then
