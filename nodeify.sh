@@ -348,28 +348,28 @@ parse_node()
                 }
                 next
             }
-            /^  os-distro:/ {
+            /^  os.distro:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_distro="$2
                 }
                 next
             }
-            /^  os-codename:/ {
+            /^  os.codename:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_codename="$2
                 }
                 next
             }
-            /^  os-release:/ {
+            /^  os.release:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_release="$2
                 }
                 next
             }
-            /^  host-infrastructure:/ {
+            /^  host.infrastructure:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   l=length($1)
@@ -377,7 +377,7 @@ parse_node()
                 }
                 next
             }
-            /^  host-location:/ {
+            /^  location:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   l=length($1)
@@ -385,10 +385,11 @@ parse_node()
                 }
                 next
             }
-            /^  host-type:/ {
+            /^  host.type:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
-                  print "hosttype="$2
+                  l=length($1)
+                  print "hosttype=\""substr($0, l+4)"\""
                 }
                 next
             }
@@ -887,9 +888,9 @@ case $1 in
     search)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/nodes || true
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\W$1:" $inventorydir/classes || true
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
     ;;
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
