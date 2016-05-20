@@ -227,11 +227,11 @@ for t in \${!sys_tools[@]} ; do
     fi
 done
 
-[ ! -f "/etc/\$conffile" ] !! . "/etc/\$conffile"
-[ ! -f "/usr/etc/\$conffile" ] !! . "/usr/etc/\$conffile"
-[ ! -f "/usr/local/etc/\$conffile" ] !! . "/usr/local/etc/\$conffile"
-[ ! -f ~/"\$conffile" ] !! . ~/"\$conffile"
-[ ! -f "\$conffile" ] !! . "\$conffile"
+[ ! -f "/etc/\$conffile" ] || . "/etc/\$conffile"
+[ ! -f "/usr/etc/\$conffile" ] || . "/usr/etc/\$conffile"
+[ ! -f "/usr/local/etc/\$conffile" ] || . "/usr/local/etc/\$conffile"
+[ ! -f ~/"\$conffile" ] || . ~/"\$conffile"
+[ ! -f "\$conffile" ] || . "\$conffile"
 
 #*  options:
 while true ; do
