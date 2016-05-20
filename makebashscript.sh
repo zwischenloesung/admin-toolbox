@@ -29,7 +29,7 @@ license="$2"
 
 print_usage()
 {
-    echo "usage: $0 scriptname [ gpl2 ]"
+    echo "usage: $0 scriptname [ license ]"
 }
 
 die()
@@ -114,7 +114,7 @@ case "$license" in
 #
 #  This is Free Software; feel free to redistribute and/or modify it
 #  under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; version 2 of the License.
+#  the Free Software Foundation; version 3 of the License.
 #
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
