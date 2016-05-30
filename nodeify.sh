@@ -66,6 +66,9 @@ classfilter=""
 nodefilter=""
 projectfilter=""
 
+ansible_root=""
+force=1
+
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
 sys_tools=( ["_awk"]="/usr/bin/gawk"
@@ -95,6 +98,10 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
 danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" "_rsync" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
+
+declare -A opt_sys_tools
+opt_sys_tools=( ["_ansible"]="/usr/bin/ansible" )
+opt_danger_tools=( "_ansible" )
 
 ## functions ##
 
@@ -138,6 +145,14 @@ for t in ${!sys_tools[@]} ; do
     fi
 done
 
+for t in ${!opt_sys_tools[@]} ; do
+    if [ -x "${opt_sys_tools[$t]##* }" ] ; then
+        export ${t}="${opt_sys_tools[$t]}"
+    else
+        echo "Warning! Missing system tool: ${opt_sys_tools[$t]##* }."
+    fi
+done
+
 [ -r "$conffile" ] && . $conffile
 
 #* options:
@@ -157,6 +172,10 @@ while true ; do
     -C|--class)
         shift
         classfilter="$1"
+    ;;
+#*  -f |--force                     do not ask before changing anything
+    -f|--force)
+        force=0
     ;;
 #*  -h |--help                      print this help
         -h|--help)
@@ -198,6 +217,10 @@ while true ; do
             shift
             merge_only_this_subdir=$1
         ;;
+#*  -S |--ansible-become-root       Ansible: Use --become-user root -K
+        -S|--ansible-bec*)
+            ansible_root="--become-user root -K"
+        ;;
 #*  -v |--version
         -v|--version)
             print_version
@@ -232,6 +255,10 @@ fi
 
 for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
+done
+
+for t in ${opt_danger_tools[@]} ; do
+    [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
 done
 
 ## define these in parse_node()
@@ -800,15 +827,48 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
-#*  ansible-put                     ansible -m copy wrapper
+#*  ansible-put                     ansible oversimplified copy module wrapper
     ansible-put|put)
+#        [ -n "$_ansible" ] || error "Missing system tool: ansible."
 
-        echo "not implemented yet"
+#        if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
+#            hostpattern="$classfilter,$nodefilter"
+#        elif [ -n "$classfilter" ] ; then
+#            hostpattern="$classfilter"
+#        elif [ -n "$nodefilter" ] ; then
+#            hostpattern="$nodefilter"
+#        else
+#            error "No class or node was specified.."
+#        fi
+
+#        echo "wrapping $_ansible $hostpattern $ansible_root -m copy -a 'src=$2 dest=$3'"
+#        if [ 0 -ne "$force" ] ; then
+#            echo "Press <Enter> to continue <Ctrl-C> to quit"
+#            read
+#        fi
+error "not implemented yet - maybe also not really needed..?"
+#        $_ansible -m copy -a "src=$2 dest=$3"
     ;;
-#*  ansible-fetch                   ansible -m fetch wrapper
+#*  ansible-fetch                   ansible oversimplified fetch module wrapper
     ansible-fetch|fetch)
+        [ -n "$_ansible" ] || error "Missing system tool: ansible."
 
-        echo "not implemented yet"
+        if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
+            hostpattern="$classfilter,$nodefilter"
+        elif [ -n "$classfilter" ] ; then
+            hostpattern="$classfilter"
+        elif [ -n "$nodefilter" ] ; then
+            hostpattern="$nodefilter"
+        else
+            error "No class or node was specified.."
+        fi
+
+        echo "wrapping $_ansible $hostpattern $ansible_root -m fetch -a 'src=$2 dest=$3'"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible $hostpattern $ansible_root -m fetch -a "src=$2 dest=$3"
     ;;
     *)
         if [ -n "$classfilter" ] ; then
