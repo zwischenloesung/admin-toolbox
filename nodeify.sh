@@ -62,6 +62,7 @@ projectdirs=()
 
 # Unsetting this helper variables (sane defaults)
 _pre=""
+classfilter=""
 nodefilter=""
 projectfilter=""
 
@@ -151,6 +152,12 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
+#*  -C |--class class               only process member nodes of this class
+#*                                  (see reclass classes)
+    -C|--class)
+        shift
+        classfilter="$1"
+    ;;
 #*  -h |--help                      print this help
         -h|--help)
             print_help
@@ -175,7 +182,9 @@ while true ; do
             shift
             nodefilter="$1"
         ;;
-#*  -P |--project project           only process nodes from this project
+#*  -P |--project project           only process nodes from this project,
+#*                                  which practically is the node namespace
+#*                                  from reclass (directory hierarchy)
         -P|--project)
             shift
             projectfilter="$1"
@@ -791,6 +800,25 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
+#*  ansible-put                     ansible -m copy wrapper
+    ansible-put|put)
+
+        echo "not implemented yet"
+    ;;
+#*  ansible-fetch                   ansible -m fetch wrapper
+    ansible-fetch|fetch)
+
+        echo "not implemented yet"
+    ;;
+    *)
+        if [ -n "$classfilter" ] ; then
+            process_nodes process_classes ${nodes[@]}
+            nodes=()
+            for a in ${classes_dict[$classfilter]//:/ } ; do
+                nodes=( ${nodes[@]} $a )
+            done
+        fi
+    ;;&
 #*  applications-list (als)         list hosts sorted by applications
     als|app*)
         process_nodes process_applications ${nodes[@]}
