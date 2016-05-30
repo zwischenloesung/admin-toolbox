@@ -878,7 +878,13 @@ case $1 in
 #*  reclass                         just wrap reclass
     rec*)
         if [ -n "$nodefilter" ] ; then
-            reclassmode="-n $nodefilter"
+            nodefilter=$($_find -L $inventorydir/nodes/ -name "$nodefilter" -o -name "${nodefilter}\.*" | $_sed -e 's;.yml;;' -e 's;.*/;;')
+
+            if [ -n "$nodefilter" ] ; then
+                reclassmode="-n $nodefilter"
+            else
+                error "The node does not seem to exist: $nodefilter"
+            fi
         else
             reclassmode="-i"
         fi
