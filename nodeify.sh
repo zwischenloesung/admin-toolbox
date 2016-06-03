@@ -859,6 +859,9 @@ error "not implemented yet - maybe also not really needed..?"
     ansible-fetch|fetch)
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
 
+        if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
+            nodefilter="${nodefilter}*"
+        fi
         if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
             hostpattern="$classfilter,$nodefilter"
         elif [ -n "$classfilter" ] ; then
