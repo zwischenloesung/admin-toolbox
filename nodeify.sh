@@ -849,7 +849,13 @@ case $1 in
 error "not implemented yet - maybe also not really needed..?"
 #        $_ansible -m copy -a "src=$2 dest=$3"
     ;;
-#*  ansible-fetch                   ansible oversimplified fetch module wrapper
+#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module wrapper
+#*                                  'src' is /path/file on remote host
+#*                                  'dest' is /localpath/
+#*                                  without 'flat' hostname is namespace
+#*                                  else use 'flat' instead of hostname
+#*                                  for destination path which looks like
+#*                                  localhost:/localpath/namespace/path/file
     ansible-fetch|fetch)
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
 
@@ -863,12 +869,21 @@ error "not implemented yet - maybe also not really needed..?"
             error "No class or node was specified.."
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root -m fetch -a 'src=$2 dest=$3'"
+        src=$2
+        dest=$3
+
+        if [ -n "$4" ] ; then
+
+            dest=$dest/$4/$src
+            flat="flat=true"
+        fi
+
+        echo "wrapping $_ansible $hostpattern $ansible_root -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root -m fetch -a "src=$2 dest=$3"
+        $_ansible $hostpattern $ansible_root -m fetch -a "src=$src dest=$dest $flat"
     ;;
     *)
         if [ -n "$classfilter" ] ; then
