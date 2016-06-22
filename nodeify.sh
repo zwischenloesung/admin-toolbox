@@ -827,36 +827,7 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
-#*  ansible-put                     ansible oversimplified copy module wrapper
-    ansible-put|put)
-#        [ -n "$_ansible" ] || error "Missing system tool: ansible."
-
-#        if [ -n "$classfilter" ] && [ -n "$nodefilter" ] ; then
-#            hostpattern="$classfilter,$nodefilter"
-#        elif [ -n "$classfilter" ] ; then
-#            hostpattern="$classfilter"
-#        elif [ -n "$nodefilter" ] ; then
-#            hostpattern="$nodefilter"
-#        else
-#            error "No class or node was specified.."
-#        fi
-
-#        echo "wrapping $_ansible $hostpattern $ansible_root -m copy -a 'src=$2 dest=$3'"
-#        if [ 0 -ne "$force" ] ; then
-#            echo "Press <Enter> to continue <Ctrl-C> to quit"
-#            read
-#        fi
-error "not implemented yet - maybe also not really needed..?"
-#        $_ansible -m copy -a "src=$2 dest=$3"
-    ;;
-#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module wrapper
-#*                                  'src' is /path/file on remote host
-#*                                  'dest' is /localpath/
-#*                                  without 'flat' hostname is namespace
-#*                                  else use 'flat' instead of hostname
-#*                                  for destination path which looks like
-#*                                  localhost:/localpath/namespace/path/file
-    ansible-fetch|fetch)
+    ansible-*|put|fetch)
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
 
         if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
@@ -871,10 +842,38 @@ error "not implemented yet - maybe also not really needed..?"
         else
             error "No class or node was specified.."
         fi
+    ;;&
+#*  ansible-put src dest            ansible oversimplified copy module wrapper
+#*                                  'src' is /path/file on local host
+#*                                  'dest' is /path/.. on remote host
+    ansible-put|put)
 
         src=$2
         dest=$3
 
+        owner="" ; [ -z "$4" ] || owner="owner=$4"
+        mode="" ; [ -z "$5" ] || mode="mode=$5"
+
+        echo "wrapping $_ansible $hostpattern $ansible_root -m copy -a 'src=$src dest=$dest' $owner $mode"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible $hostpattern $ansible_root -m copy -a "src=$src dest=$dest" $owner $mode
+    ;;
+#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module wrapper
+#*                                  'src' is /path/file on remote host
+#*                                  'dest' is /path/ on local side
+#*                                  without 'flat' hostname is namespace
+#*                                  else use 'flat' instead of hostname
+#*                                  for destination path which looks like
+#*                                  localhost:/localpath/namespace/path/file
+    ansible-fetch|fetch)
+
+        src=$2
+        dest=$3
+
+        flat=""
         if [ -n "$4" ] ; then
 
             dest=$dest/$4/$src
