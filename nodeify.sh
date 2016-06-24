@@ -571,6 +571,11 @@ process_nodes()
     done
 }
 
+list_node_short()
+{
+    printf "$n\n"
+}
+
 list_node()
 {
     output="\e[1;39m$n \e[1;36m($environement:$project)"
@@ -909,6 +914,10 @@ case $1 in
 #*  help                            print this help
     help)
         print_help
+    ;;
+#*  shortlist (l)                   list nodes - but just the hostname
+    l|shortlist)
+        process_nodes list_node_short ${nodes[@]}
     ;;
 #*  list (ls)                       list nodes
     ls|list*)
