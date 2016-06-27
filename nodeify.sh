@@ -1008,31 +1008,46 @@ case $1 in
     search)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/nodes || true
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" -e "{{ $1 }}" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" -e "{{ $1 }}" $inventorydir/classes || true
     ;;
 #*  search-all                      show what variables are used
     search-all)
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" -e "{{ .* }}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" -e "{{ .* }}" $inventorydir/classes || true
+    ;;
+#*  search-external variable        show in which file an external {{ variable }} is configured
+    search-external)
+        shift
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "{{ $1 }}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "{{ $1 }}" $inventorydir/classes || true
+    ;;
+#*  search-external-all             show what external {{ variables }} are used
+    search-external-all)
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "{{ .* }}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "{{ .* }}" $inventorydir/classes || true
+    ;;
+#*  search-reclass variable         show in which file a ${variable} is configured
+    search-reclass)
+        shift
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
+    ;;
+#*  search-reclass-all              show what ${variables} are used
+    search-reclass-all)
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/classes || true
-    ;;
-#*  search-local variable           show in which file a variable is configured
-    search-local)
-        shift
-        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ $1 }}" $inventorydir/nodes || true
-        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ $1 }}" $inventorydir/classes || true
-    ;;
-#*  search-local-all                show what local variables are used
-    search-local-all)
-        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ .* }}" $inventorydir/nodes || true
-        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ .* }}" $inventorydir/classes || true
     ;;
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
