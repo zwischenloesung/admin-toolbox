@@ -33,7 +33,7 @@
 [ "$1" == "debug" ] && shift && set -x
 
 ## variables ##
-declare -A projectdirs
+declare -A localdirs
 ### you may copy the following variables into this file for having your own
 ### local config ...
 conffile=~/.nodeify
@@ -57,7 +57,7 @@ merge_mode="dir"
 inventorydir=""
 targetdir=""
 
-projectdirs=()
+localdirs=()
 ### }}}
 
 # Unsetting this helper variables (sane defaults)
@@ -297,16 +297,16 @@ parse_node()
 
     awk_var_p_keys=";"
     awk_var_p_vals=";"
-    for k in ${!projectdirs[@]} ; do
+    for k in ${!localdirs[@]} ; do
         awk_var_p_keys="$k;$awk_var_p_keys"
-        awk_var_p_vals="${projectdirs[$k]};$awk_var_p_vals"
+        awk_var_p_vals="${localdirs[$k]};$awk_var_p_vals"
     done
     OLDIFS=$IFS
     IFS="
 "
     eval $(\
         $_reclass -b $inventorydir -n $1 |\
-        $_awk -v p_len=${#projectdirs[@]} -v p_keys=$awk_var_p_keys \
+        $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
               -v p_vals=$awk_var_p_vals \
             'BEGIN {
                 hostname="'$hostname'"
@@ -1004,13 +1004,35 @@ case $1 in
         fi
         $_reclass -b $inventorydir $reclassmode
     ;;
-#*  search parameter                show in which file a parameter is configured
+#*  search variable                 show in which file a variable is configured
     search)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" $inventorydir/classes || true
+    ;;
+#*  search-all                      show what variables are used
+    search-all)
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" $inventorydir/classes || true
+    ;;
+#*  search-local variable           show in which file a variable is configured
+    search-local)
+        shift
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ $1 }}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ $1 }}" $inventorydir/classes || true
+    ;;
+#*  search-local-all                show what local variables are used
+    search-local-all)
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ .* }}" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "{{ .* }}" $inventorydir/classes || true
     ;;
 #*  status (ss)                     test host by ssh and print distro and ip(s)
     ss|status)
