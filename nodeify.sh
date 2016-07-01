@@ -617,9 +617,8 @@ connect_well_known()
     echo " - debops:     for now, the 'inventory' is hard coded in debops"
     echo "               so the 'hostsfile' variable in ansible.cfg will"
     echo "               always be overwritten by debops. I do not know"
-    echo "               any way to work around that problem yet. we can"
-    echo "               only use ansible-playbook together with the debops"
-    echo "               playbooks at the moment."
+    echo "               any way to work around that problem yet. You can"
+    echo "               only use the --inventory option at the moment."
 }
 
 process_nodes()
