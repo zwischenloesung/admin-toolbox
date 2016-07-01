@@ -103,7 +103,8 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_tr"]="/usr/bin/tr"
             ["_wc"]="/usr/bin/wc" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" "_rsync" )
+danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir"
+               "_sed" "_rm" "_rmdir" "_rsync" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
 
@@ -507,6 +508,22 @@ parse_node()
             }'
     )
     IFS=$OLDIFS
+}
+
+clone_init()
+{
+    cdir="$1"
+    [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
+    [ -d "$cdir/nodes" ] && error "a directory '$cdir/nodes' already exists, please remove manually first.."
+    [ -d "$cdir/classes" ] && error "a directory '$cdir/classes' already exists, please remove manually first.."
+    $_ln -s $ansible_connect "$cdir/hosts"
+    $_mkdir "$cdir/nodes" "$cdir/classes"
+    $_ln -s $inventorydir/classes/* "$cdir/classes/"
+    if [ -z "$projectfilter" ] ; then
+        $_ln -s $inventorydir/nodes/* "$cdir/nodes/"
+    else
+        $_ln -s $inventorydir/nodes/$projectfilter "$cdir/nodes/"
+    fi
 }
 
 connect_node()
@@ -920,12 +937,30 @@ case $1 in
             done
         done
     ;;
+#*  clone [directory]               clone your current knowledge base into a new
+#*                                  path. (this is almost identical to 'init').
+    clone)
+        shift
+        if [ -n "$1" ] ; then
+            if [ -d "$1" ] ; then
+                cdir="$1"
+            else
+                error "Could not find directory: $1"
+            fi
+        else
+            cdir="$($_pwd)"
+        fi
+        $_cp $conffile $cdir
+        $_sed -i $cdir/${conffile##*/} -e 's;inventorydir=.*;inventorydir="'$cdir'";'
+        clone_init $cdir
+    ;;
 #*  help                            print this help
     help)
         print_help
     ;;
-#*  init [directory]                connect this (ansible-/debops-) directory
-#*                                  to the knowlegebase
+#*  init [directory]                connect a (ansible-/debops-/..) directory
+#*                                  to your knowledge base (this is almost
+#*                                  identical to 'clone').
     init)
         shift
         if [ -n "$1" ] ; then
@@ -937,17 +972,7 @@ case $1 in
         else
             cdir="."
         fi
-        [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
-        [ -d "$cdir/nodes" ] && error "a directory '$cdir/nodes' already exists, please remove manually first.."
-        [ -d "$cdir/classes" ] && error "a directory '$cdir/classes' already exists, please remove manually first.."
-        $_ln -s $ansible_connect "$cdir/hosts"
-        $_mkdir "$cdir/nodes" "$cdir/classes"
-        $_ln -s $inventorydir/classes/* "$cdir/classes/"
-        if [ -z "$projectfilter" ] ; then
-            $_ln -s $inventorydir/nodes/* "$cdir/nodes/"
-        else
-            $_ln -s $inventorydir/nodes/$projectfilter "$cdir/nodes/"
-        fi
+        clone_init $cdir
     ;;
 #*  shortlist (l)                   list nodes - but just the hostname
     l|shortlist)
