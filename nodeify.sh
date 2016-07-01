@@ -35,7 +35,8 @@
 ## variables ##
 declare -A localdirs
 ### you may copy the following variables into this file for having your own
-### local config ...
+### local config, everything after the last slash will also be searched for
+### in the current directory in order to support independent project dirs.
 conffile=~/.nodeify
 ### {{{
 
@@ -57,7 +58,13 @@ merge_mode="dir"
 inventorydir=""
 targetdir=""
 
+# specify all local directories you intend to use in your reclass hosts in this
+# associative array, now you can reference them by using their {{ key }}
 localdirs=()
+
+# this is the hosts link
+ansible_connect=/usr/share/reclass/reclass-ansible
+
 ### }}}
 
 # Unsetting this helper variables (sane defaults)
@@ -80,6 +87,7 @@ sys_tools=( ["_awk"]="/usr/bin/gawk"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_ip"]="/bin/ip"
+            ["_ln"]="/bin/ln"
             ["_lsb_release"]="/usr/bin/lsb_release"
             ["_mkdir"]="/bin/mkdir"
             ["_mv"]="/bin/mv"
@@ -153,7 +161,8 @@ for t in ${!opt_sys_tools[@]} ; do
     fi
 done
 
-[ -r "$conffile" ] && . $conffile
+[ -r "$conffile" ] && . "$conffile"
+[ -r "${conffile##*/}" ] && . "${conffile##*/}"
 
 #* options:
 while true ; do
@@ -914,6 +923,31 @@ case $1 in
 #*  help                            print this help
     help)
         print_help
+    ;;
+#*  init [directory]                connect this (ansible-/debops-) directory
+#*                                  to the knowlegebase
+    init)
+        shift
+        if [ -n "$1" ] ; then
+            if [ -d "$1" ] ; then
+                cdir="$1"
+            else
+                error "Could not find directory: $1"
+            fi
+        else
+            cdir="."
+        fi
+        [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
+        [ -d "$cdir/nodes" ] && error "a directory '$cdir/nodes' already exists, please remove manually first.."
+        [ -d "$cdir/classes" ] && error "a directory '$cdir/classes' already exists, please remove manually first.."
+        $_ln -s $ansible_connect "$cdir/hosts"
+        $_mkdir "$cdir/nodes" "$cdir/classes"
+        $_ln -s $inventorydir/classes/* "$cdir/classes/"
+        if [ -z "$projectfilter" ] ; then
+            $_ln -s $inventorydir/nodes/* "$cdir/nodes/"
+        else
+            $_ln -s $inventorydir/nodes/$projectfilter "$cdir/nodes/"
+        fi
     ;;
 #*  shortlist (l)                   list nodes - but just the hostname
     l|shortlist)
