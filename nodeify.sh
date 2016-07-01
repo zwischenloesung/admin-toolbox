@@ -510,19 +510,31 @@ parse_node()
     IFS=$OLDIFS
 }
 
+clone_config()
+{
+    $_cp $conffile $1
+    $_sed -i $1/${conffile##*/} -e 's;inventorydir=.*;inventorydir="'$1'";'
+}
+
 clone_init()
 {
     cdir="$1"
+    f="$2"
     [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
     [ -d "$cdir/nodes" ] && error "a directory '$cdir/nodes' already exists, please remove manually first.."
     [ -d "$cdir/classes" ] && error "a directory '$cdir/classes' already exists, please remove manually first.."
     $_ln -s $ansible_connect "$cdir/hosts"
     $_mkdir "$cdir/nodes" "$cdir/classes"
-    $_ln -s $inventorydir/classes/* "$cdir/classes/"
-    if [ -z "$projectfilter" ] ; then
-        $_ln -s $inventorydir/nodes/* "$cdir/nodes/"
+    if [ -z "$f" ] ; then
+        l="$_ln -s"
     else
-        $_ln -s $inventorydir/nodes/$projectfilter "$cdir/nodes/"
+        l="$_cp -r"
+    fi
+    $l $inventorydir/classes/* "$cdir/classes/"
+    if [ -z "$projectfilter" ] ; then
+        $l $inventorydir/nodes/* "$cdir/nodes/"
+    else
+        $l $inventorydir/nodes/$projectfilter "$cdir/nodes/"
     fi
 }
 
@@ -938,8 +950,9 @@ case $1 in
         done
     ;;
 #*  clone [directory]               clone your current knowledge base into a new
-#*                                  path. (this is almost identical to 'init').
-    clone)
+#*                                  path. (identical to 'init-clone'; see also
+#*                                 'clone-link').
+    clone|init-clone)
         shift
         if [ -n "$1" ] ; then
             if [ -d "$1" ] ; then
@@ -950,8 +963,24 @@ case $1 in
         else
             cdir="$($_pwd)"
         fi
-        $_cp $conffile $cdir
-        $_sed -i $cdir/${conffile##*/} -e 's;inventorydir=.*;inventorydir="'$cdir'";'
+        clone_config $cdir
+        clone_init $cdir force
+    ;;
+#*  clone-link [directory]          link your current knowledge base into a new
+#*                                  path. (this is almost identical to 'init';
+#*                                  see also 'clone').
+    clone-link)
+        shift
+        if [ -n "$1" ] ; then
+            if [ -d "$1" ] ; then
+                cdir="$1"
+            else
+                error "Could not find directory: $1"
+            fi
+        else
+            cdir="$($_pwd)"
+        fi
+        clone_config $cdir
         clone_init $cdir
     ;;
 #*  help                            print this help
@@ -960,7 +989,8 @@ case $1 in
     ;;
 #*  init [directory]                connect a (ansible-/debops-/..) directory
 #*                                  to your knowledge base (this is almost
-#*                                  identical to 'clone').
+#*                                  identical to 'clone-link' but does not
+#*                                  produce a local config file).
     init)
         shift
         if [ -n "$1" ] ; then
@@ -974,6 +1004,11 @@ case $1 in
         fi
         clone_init $cdir
     ;;
+#*  init-clone [directory]          clone the knowledge base to this
+#*                                  project directory and connect the
+#*                                  (ansible-/debops-/..) project
+#*                                  (this is actually identical to 'clone').
+#    clone|init-clone)
 #*  shortlist (l)                   list nodes - but just the hostname
     l|shortlist)
         process_nodes list_node_short ${nodes[@]}
