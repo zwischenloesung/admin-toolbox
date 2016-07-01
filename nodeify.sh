@@ -512,8 +512,8 @@ parse_node()
 
 clone_config()
 {
-    $_cp $conffile $1
-    $_sed -i $1/${conffile##*/} -e 's;inventorydir=.*;inventorydir="'$1'";'
+    [ -f "$1/${conffile##*/}" ] || $_cp "$conffile" "$1"
+    $_sed -i "$1/${conffile##*/}" -e 's;inventorydir=.*;inventorydir="'$1'";'
 }
 
 clone_init()
