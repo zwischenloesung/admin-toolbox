@@ -521,20 +521,30 @@ clone_init()
     cdir="$1"
     f="$2"
     [ -f "$cdir/hosts" ] && error "a file '$cdir/hosts' already exists, please remove manually first.."
-    [ -d "$cdir/nodes" ] && error "a directory '$cdir/nodes' already exists, please remove manually first.."
-    [ -d "$cdir/classes" ] && error "a directory '$cdir/classes' already exists, please remove manually first.."
+    [ -f "$cdir/reclass-config.yml" ] && error "a file '$cdir/reclass-config.yml' already exists, please remove manually first.."
+    [ -d "$cdir/reclass-env" ] && error "a directory '$cdir/reclass-env' already exists, please remove manually first.."
     $_ln -s $ansible_connect "$cdir/hosts"
-    $_mkdir "$cdir/nodes" "$cdir/classes"
+    if [ -z "$_pre" ] ; then
+        $_cat > "$cdir/reclass-config.yml" << EOF
+storage_type: yaml_fs
+inventory_base_uri: $cdir/reclass-env
+EOF
+    else
+        echo "write config file $cdir/reclass-config.yml"
+        echo "  storage_type: yaml_fs"
+        echo "  inventory_base_uri: $cdir/reclass-env"
+    fi
+    $_mkdir -p "$cdir/reclass-env/nodes" "$cdir/reclass-env/classes"
     if [ -z "$f" ] ; then
         l="$_ln -s"
     else
         l="$_cp -r"
     fi
-    $l $inventorydir/classes/* "$cdir/classes/"
+    $l $inventorydir/classes/* "$cdir/reclass-env/classes/"
     if [ -z "$projectfilter" ] ; then
-        $l $inventorydir/nodes/* "$cdir/nodes/"
+        $l $inventorydir/nodes/* "$cdir/reclass-env/nodes/"
     else
-        $l $inventorydir/nodes/$projectfilter "$cdir/nodes/"
+        $l $inventorydir/nodes/$projectfilter "$cdir/reclass-env/nodes/"
     fi
 }
 
@@ -591,6 +601,25 @@ connect_node()
         answer1=$( $_ssh $1 $_ip $ipprot address show eth0 | $_grep inet)
         printf "\e[0;32m$answer1\n\e[0;39m"
     fi
+}
+
+connect_well_known()
+{
+    echo "Please note that for the moment we do not have real means for"
+    echo "automatically do this step for you, instead we just list some"
+    echo "options here:"
+    echo " - ansible:    you need to set the 'hostfile' variable in the"
+    echo "               (e.g. local) ansible.cfg to point to the newly"
+    echo "               created environement, i.e. to point to the file"
+    echo "               'hosts', this links to reclass-ansible and reads"
+    echo "               the 'reclass-config.yml' configuration in order to"
+    echo "               be able to find 'reclass-env'."
+    echo " - debops:     for now, the 'inventory' is hard coded in debops"
+    echo "               so the 'hostsfile' variable in ansible.cfg will"
+    echo "               always be overwritten by debops. I do not know"
+    echo "               any way to work around that problem yet. we can"
+    echo "               only use ansible-playbook together with the debops"
+    echo "               playbooks at the moment."
 }
 
 process_nodes()
@@ -950,9 +979,9 @@ case $1 in
         done
     ;;
 #*  clone [directory]               clone your current knowledge base into a new
-#*                                  path. (identical to 'init-clone'; see also
-#*                                 'clone-link').
-    clone|init-clone)
+#*                                  path. (almost identical to 'init-clone';
+#*                                  see also 'clone-link').
+    clone)
         shift
         if [ -n "$1" ] ; then
             if [ -d "$1" ] ; then
@@ -1000,15 +1029,31 @@ case $1 in
                 error "Could not find directory: $1"
             fi
         else
-            cdir="."
+            cdir="$($_pwd)"
         fi
         clone_init $cdir
+        connect_well_known
     ;;
 #*  init-clone [directory]          clone the knowledge base to this
 #*                                  project directory and connect the
 #*                                  (ansible-/debops-/..) project
-#*                                  (this is actually identical to 'clone').
-#    clone|init-clone)
+#*                                  (this is actually almost identical to
+#*                                  'clone'; see also 'init').
+    init-clone)
+        shift
+        if [ -n "$1" ] ; then
+            if [ -d "$1" ] ; then
+                cdir="$1"
+            else
+                error "Could not find directory: $1"
+            fi
+        else
+            cdir="$($_pwd)"
+        fi
+        clone_config $cdir
+        clone_init $cdir force
+        connect_well_known
+    ;;
 #*  shortlist (l)                   list nodes - but just the hostname
     l|shortlist)
         process_nodes list_node_short ${nodes[@]}
