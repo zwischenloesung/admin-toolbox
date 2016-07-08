@@ -65,6 +65,9 @@ localdirs=()
 # this is the hosts link
 ansible_connect=/usr/share/reclass/reclass-ansible
 
+# options to pass to ansible (see also -A/--ansible-options)
+ansibleoptions=""
+
 ### }}}
 
 # Unsetting this helper variables (sane defaults)
@@ -168,6 +171,11 @@ done
 #* options:
 while true ; do
     case "$1" in
+#*  -A |--ansible-options 'options' options to pass to ansible
+    -A|--ansible-options)
+        shift
+        ansibleoptions="$1"
+    ;;
 #*  -c |--config conffile           alternative config file
         -c|--config)
             shift
@@ -925,12 +933,12 @@ case $1 in
         owner="" ; [ -z "$4" ] || owner="owner=$4"
         mode="" ; [ -z "$5" ] || mode="mode=$5"
 
-        echo "wrapping $_ansible $hostpattern $ansible_root -m copy -a 'src=$src dest=$dest' $owner $mode"
+        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root -m copy -a "src=$src dest=$dest" $owner $mode
+        $_ansible $hostpattern $ansible_root $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
 #*  ansible-fetch src dest [flat]   ansible oversimplified fetch module wrapper
 #*                                  'src' is /path/file on remote host
@@ -951,12 +959,12 @@ case $1 in
             flat="flat=true"
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root -m fetch -a 'src=$src dest=$dest $flat'"
+        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root -m fetch -a "src=$src dest=$dest $flat"
+        $_ansible $hostpattern $ansible_root $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
     *)
         if [ -n "$classfilter" ] ; then
