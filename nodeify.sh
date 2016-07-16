@@ -506,7 +506,9 @@ parse_node()
                 next
             }
             /^ *- / {
-                list=list " " $2
+                if ( mode != "none" ) {
+                    list=list " " $2
+                }
                 next
             }
             {
@@ -677,8 +679,8 @@ list_node()
 list_distro_packages()
 {
     list_node $n
-    ps=( $(eval 'echo ${'${os_name}'__packages[@]}') )
-    ps=( ${ps[@]} $(eval 'echo ${'${os_name}'_'${os_version}'_packages[@]}') )
+    ps=( $(eval 'echo ${'${os_distro}'__packages[@]}') )
+    ps=( ${ps[@]} $(eval 'echo ${'${os_distro}'_'${os_codename}'_packages[@]}') )
     ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
     for p in ${ps[@]} ; do
         printf "\e[0;33m - ${p}\n"
@@ -1087,7 +1089,8 @@ case $1 in
             done
         done
     ;;
-    lsp)
+#*  list-distro-packages            list app package names for the hosts distro
+    lsp|list-distro-packages)
         process_nodes list_distro_packages ${nodes[@]}
     ;;
 #*  list-merge-customs (lsmc)       show custom merge rules
