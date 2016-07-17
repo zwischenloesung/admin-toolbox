@@ -338,10 +338,14 @@ reclass_parser='BEGIN {
                 tmp=metamode
                 numcolons=gsub(":", "", tmp)
                 doprint="f"
-                while ( numcolons >= numspaces/2 ) {
-                    sub(":\\w*$", "", metamode)
-                    numcolons--
+                if (( numcolons == 0 ) && ( numspaces == 2 )) {
                     doprint=""
+                } else {
+                    while ( numcolons >= numspaces/2 ) {
+                        sub(":\\w*$", "", metamode)
+                        numcolons--
+                        doprint=""
+                    }
                 }
                 if (( doprint == "" ) && ( mode != "none" ) && ( list != "" )) {
                     print mode"=( "list" )"
@@ -512,7 +516,7 @@ reclass_parser='BEGIN {
             /^ *- / {
                 if (( mode != "none") && ( mode != "debops" )) {
                     gsub("'"'"'", "\"")
-                    gsub("-", "")
+                    sub("- ", "")
                     list=list "\n'"'"'" $0 "'"'"'"
                 }
                 next
