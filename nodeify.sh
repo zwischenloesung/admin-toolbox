@@ -79,6 +79,8 @@ projectfilter=""
 ansible_root=""
 force=1
 
+parser_dryrun=1
+
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
 sys_tools=( ["_awk"]="/usr/bin/gawk"
@@ -219,6 +221,10 @@ while true ; do
             shift
             nodefilter="$1"
         ;;
+#*  -p |--parser-test               only output what would be fed to script
+        -p|--parser-test)
+            parser_dryrun=0
+        ;;
 #*  -P |--project project           only process nodes from this project,
 #*                                  which practically is the node namespace
 #*                                  from reclass (directory hierarchy)
@@ -282,6 +288,7 @@ done
 ## define these in parse_node()
 applications=()
 classes=()
+debops=()
 environement=""
 hostinfrastructure=""
 hostlocation=""
@@ -294,39 +301,7 @@ remergecustomsrc=()
 declare -A remergecustomdest
 remergecustomdest=()
 
-parse_node()
-{
-    # make sure they are empty
-    applications=()
-    classes=()
-    environement=""
-    hostinfrastructure=""
-    hostlocation=""
-    hosttype=""
-    os_name=""
-    os_codename=""
-    os_distro=""
-    os_release=""
-    project=""
-    storagedirs=()
-    remergedirect=()
-    remergecustomsrc=()
-    remergecustomdest=()
-
-    awk_var_p_keys=";"
-    awk_var_p_vals=";"
-    for k in ${!localdirs[@]} ; do
-        awk_var_p_keys="$k;$awk_var_p_keys"
-        awk_var_p_vals="${localdirs[$k]};$awk_var_p_vals"
-    done
-    OLDIFS=$IFS
-    IFS="
-"
-    eval $(\
-        $_reclass -b $inventorydir -n $1 |\
-        $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
-              -v p_vals=$awk_var_p_vals \
-            'BEGIN {
+reclass_parser='BEGIN {
                 hostname="'$hostname'"
                 domainname="'$domainname'"
                 fqdn="'$n'"
@@ -352,20 +327,27 @@ parse_node()
                     gsub("{{ "var" }}", projects[var])
                 }
             }
-            !/^ *- / || /:$/ {
+            !/^ *- / {
+#print "we_are_here="metamode"-"mode
                 tmp=$0
+                # compare the number of leading spaces divided by 2 to
+                # the number of colons in metamode to decide if we are
+                # still in the same context
                 sub("\\S.*", "", tmp)
                 numspaces=length(tmp)
                 tmp=metamode
                 numcolons=gsub(":", "", tmp)
+                doprint="f"
                 while ( numcolons >= numspaces/2 ) {
                     sub(":\\w*$", "", metamode)
                     numcolons--
+                    doprint=""
                 }
-                if (( mode != "none" ) && ( list != "" )) {
+                if (( doprint == "" ) && ( mode != "none" ) && ( list != "" )) {
                     print mode"=( "list" )"
                     mode="none"
                     list=""
+                    doprint="f"
                 }
             }
             /^  node:/ {
@@ -466,6 +448,14 @@ parse_node()
                 }
                 next
             }
+            /^  debops:$/ {
+#print "debops_="metamode
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":debops"
+                    mode="debops"
+                }
+                next
+            }
             /^  re-merge:$/ {
                 if ( metamode == "parameters" ) {
                     metamode=metamode":remerge"
@@ -488,8 +478,8 @@ parse_node()
                 if ( mode == "remergecustom" ) {
                     rckey=$1
                     sub(":", "", rckey)
+                    next
                 }
-                next
             }
             /^        file: .*$/ {
                 if (( mode == "remergecustom" ) && ( rckey != "" )) {
@@ -505,9 +495,25 @@ parse_node()
                 }
                 next
             }
+            /^      .*$/ {
+                if ( metamode == "parameters:debops" ) {
+#print "debops___="metamode
+                    gsub("'"'"'", "\"")
+                    list=list "\n'"'"'" $0 "'"'"'"
+                    next
+                }
+            }
+            /^    .*$/ {
+                if ( metamode == "parameters:debops" ) {
+#print "debops__="metamode
+                    next
+                }
+            }
             /^ *- / {
-                if ( mode != "none" ) {
-                    list=list " " $2
+                if (( mode != "none") && ( mode != "debops" )) {
+                    gsub("'"'"'", "\"")
+                    gsub("-", "")
+                    list=list "\n'"'"'" $0 "'"'"'"
                 }
                 next
             }
@@ -516,7 +522,47 @@ parse_node()
             }
             END {
             }'
-    )
+
+parse_node()
+{
+    # make sure they are empty
+    applications=()
+    classes=()
+    debops=()
+    environement=""
+    hostinfrastructure=""
+    hostlocation=""
+    hosttype=""
+    os_name=""
+    os_codename=""
+    os_distro=""
+    os_release=""
+    project=""
+    storagedirs=()
+    remergedirect=()
+    remergecustomsrc=()
+    remergecustomdest=()
+
+    awk_var_p_keys=";"
+    awk_var_p_vals=";"
+    for k in ${!localdirs[@]} ; do
+        awk_var_p_keys="$k;$awk_var_p_keys"
+        awk_var_p_vals="${localdirs[$k]};$awk_var_p_vals"
+    done
+    OLDIFS=$IFS
+    IFS="
+"
+    if [ $parser_dryrun -eq 0 ] ; then
+        $_reclass -b $inventorydir -n $1 |\
+            $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
+                  -v p_vals=$awk_var_p_vals "$reclass_parser"
+    else
+        eval $(\
+            $_reclass -b $inventorydir -n $1 |\
+            $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
+                  -v p_vals=$awk_var_p_vals "$reclass_parser"
+        )
+    fi
     IFS=$OLDIFS
 }
 
@@ -676,14 +722,42 @@ list_node()
     printf "$output\e[0;39m\n"
 }
 
+list_debops()
+{
+    list_node $n
+    for (( i=0 ; i < ${#debops[@]} ; i++ )) ; do
+        echo "${debops[i]}"
+    done
+}
+
 list_distro_packages()
 {
     list_node $n
-    ps=( $(eval 'echo ${'${os_distro}'__packages[@]}') )
-    ps=( ${ps[@]} $(eval 'echo ${'${os_distro}'_'${os_codename}'_packages[@]}') )
-    ps=( $( for p in ${ps[@]} ; do echo $p ; done | $_sort -u ) )
-    for p in ${ps[@]} ; do
-        printf "\e[0;33m - ${p}\n"
+    ps=()
+    psi=0
+    l=$(eval 'echo ${#'${os_distro}'__packages[@]}')
+    for (( i=0 ; i<l ; i++ )) ; do
+        ps[$psi]=$(eval 'echo ${'${os_distro}'__packages['$i']}')
+        let ++psi
+    done
+    l=$(eval 'echo ${'${os_distro}'_'${os_codename}'_packages[@]}')
+    for (( i=0 ; i<l ; i++ )) ; do
+        ps[$psi]=$(eval 'echo ${'${os_distro}'_'${os_codename}'_packages['$i']}')
+        let ++psi
+    done
+
+    OLDIFS=$IFS
+    IFS="
+"
+    ps=( $(
+        for (( i=0 ; i<${#ps[@]} ; i++ )); do
+            echo "${ps[$i]}"
+        done | $_sort -u
+    ) )
+    IFS=$OLDIFS
+
+    for (( i=0 ; i<${#ps[@]} ; i++ )); do
+        printf "\e[0;33m - ${ps[$i]}\n"
     done
 }
 
@@ -1088,6 +1162,10 @@ case $1 in
                 printf "\e[0;32m$h\n"
             done
         done
+    ;;
+#*  list-debops-inventory           list the ansible inventory of debops hosts
+    lsd|list-debops-inventory)
+        process_nodes list_debops ${nodes[@]}
     ;;
 #*  list-distro-packages            list app package names for the hosts distro
     lsp|list-distro-packages)
