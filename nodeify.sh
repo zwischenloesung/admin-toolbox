@@ -285,22 +285,6 @@ for t in ${opt_danger_tools[@]} ; do
     [ -z "${!t}" ] || export ${t}="$_pre ${opt_sys_tools[$t]}"
 done
 
-## define these in parse_node()
-applications=()
-classes=()
-debops=()
-environement=""
-hostinfrastructure=""
-hostlocation=""
-hosttype=""
-project=""
-storagedirs=()
-remergedirect=()
-declare -A remergecustomsrc
-remergecustomsrc=()
-declare -A remergecustomdest
-remergecustomdest=()
-
 reclass_parser='BEGIN {
                 hostname="'$hostname'"
                 domainname="'$domainname'"
@@ -534,26 +518,52 @@ reclass_parser='BEGIN {
             END {
             }'
 
+## define these in parse_node()
+re_define_parsed_variables()
+{
+#*** Array:                 applications
+    applications=()
+#*** Array:                 classes
+    classes=()
+#*** Array:                 debops
+    debops=()
+#*** String:                environemnt
+    environement=""
+#*** String:                hostinfrastructure
+    hostinfrastructure=""
+#*** String:                hostlocations
+    hostlocation=""
+#*** String:                hosttype
+    hosttype=""
+#*** String:                os_codename
+    os_codename=""
+#*** String:                os_distro
+    os_distro=""
+#*** String:                os_name
+    os_name=""
+#*** String:                os_package_selections
+    os_package_selections=""
+#*** String:                os_release
+    os_release=""
+#*** String                 project
+    project=""
+#*** Array:                 storagedirs
+    storagedirs=()
+#*** Array:                 remergedirect
+    remergedirect=()
+#*** Associative array:     remergecustomsrc
+    declare -A remergecustomsrc
+    remergecustomsrc=()
+#*** Associative array:     remergecustomdest
+    declare -A remergecustomdest
+    remergecustomdest=()
+}
+re_define_parsed_variables
+
 parse_node()
 {
     # make sure they are empty
-    applications=()
-    classes=()
-    debops=()
-    environement=""
-    hostinfrastructure=""
-    hostlocation=""
-    hosttype=""
-    os_codename=""
-    os_distro=""
-    os_name=""
-    os_package_selections=""
-    os_release=""
-    project=""
-    storagedirs=()
-    remergedirect=()
-    remergecustomsrc=()
-    remergecustomdest=()
+    re_define_parsed_variables
 
     awk_var_p_keys=";"
     awk_var_p_vals=";"
@@ -1242,6 +1252,28 @@ case $1 in
             reclassmode="-i"
         fi
         $_reclass -b $inventorydir $reclassmode
+    ;;
+#*  show-reclass-variables          show variables used in reclass that are
+#*                                  interpreted here
+    show-rec*)
+        echo "The following variables can be used in reclass and will"
+        echo "be interpreted (and potentially used) by this script."
+        echo "Note: Of course you can use other variables as well,"
+        echo "this is just a list of what $0"
+        echo "is directly aware of."
+        $_grep "^#\*\*\* " $0 | $_sed_forced 's;^#\*\*\*;;'
+        echo ""
+        echo "Furthermore these variables are needed in $conffile"
+        echo " Where to search for reclass:         inventorydir"
+        echo " Where to put (temp.) results:        targetdir"
+        echo " Local directories to replace:        localdirs"
+        echo ""
+        echo "The above 'localdirs' can be used in reclass like any other"
+        echo "external variable, i.e. '{{ name }}'. Currently these names"
+        echo "are used in your config:"
+        for d in ${!localdirs[@]} ; do
+            echo " $d: ${localdirs[$d]}"
+        done
     ;;
 #*  search variable                 show in which file a variable is configured
     search)
