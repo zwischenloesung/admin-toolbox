@@ -409,6 +409,13 @@ reclass_parser='BEGIN {
                 }
                 next
             }
+            /^  os.package_selections:/ {
+                if ( metamode == "parameters" ) {
+                  mode="none"
+                  print "os_package_selections="$2
+                }
+                next
+            }
             /^  host.infrastructure:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
@@ -502,7 +509,7 @@ reclass_parser='BEGIN {
             /^      .*$/ {
                 if ( metamode == "parameters:debops" ) {
 #print "debops___="metamode
-                    gsub("'"'"'", "\"")
+                    gsub("'"'"'", "")
                     list=list "\n'"'"'" $0 "'"'"'"
                     next
                 }
@@ -515,7 +522,7 @@ reclass_parser='BEGIN {
             }
             /^ *- / {
                 if (( mode != "none") && ( mode != "debops" )) {
-                    gsub("'"'"'", "\"")
+                    gsub("'"'"'", "")
                     sub("- ", "")
                     list=list "\n'"'"'" $0 "'"'"'"
                 }
@@ -537,9 +544,10 @@ parse_node()
     hostinfrastructure=""
     hostlocation=""
     hosttype=""
-    os_name=""
     os_codename=""
     os_distro=""
+    os_name=""
+    os_package_selections=""
     os_release=""
     project=""
     storagedirs=()
