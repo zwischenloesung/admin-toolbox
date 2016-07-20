@@ -1305,7 +1305,8 @@ case $1 in
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "{{ .* }}" $inventorydir/classes || true
     ;;
-#*  search-reclass variable         show in which file a ${variable} is configured
+#*  search-reclass variable         show in which file a ${variable} is
+#*                                  configured
     search-reclass)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
