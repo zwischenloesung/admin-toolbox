@@ -55,11 +55,14 @@ merge_only_this_subdir=""
 merge_mode="dir"
 
 # here you can store short hands for your project specific configs
+## the path to the core: the git repository storing the reclass-cmdb
 inventorydir=""
+## a collection of ansible plays to be used directly by this wrapper
+playbooks=""
+## just a directory where output is stored temporarily and for external usage
 targetdir=""
-
-# specify all local directories you intend to use in your reclass hosts in this
-# associative array, now you can reference them by using their {{ key }}
+## specify all local directories you intend to use in your reclass hosts in this
+## associative array, now you can reference them by using their {{ key }}
 localdirs=()
 
 # this is the hosts link
@@ -114,8 +117,9 @@ danger_tools=( "_cp" "_cat" "_dd" "_ln" "_mkdir"
 _sudo="/usr/bin/sudo"
 
 declare -A opt_sys_tools
-opt_sys_tools=( ["_ansible"]="/usr/bin/ansible" )
-opt_danger_tools=( "_ansible" )
+opt_sys_tools=( ["_ansible"]="/usr/bin/ansible"
+                ["_ansible_playbook"]="/usr/bin/ansible-playbook" )
+opt_danger_tools=( "_ansible" "_ansible_playbook" )
 
 ## functions ##
 
@@ -173,7 +177,13 @@ done
 #* options:
 while true ; do
     case "$1" in
-#*  -A |--ansible-options 'options' options to pass to ansible
+#*  -a |--ansible-extra-vars 'vars' options to pass to ansible
+    -a|--ansible-extra-vars)
+        shift
+        ansibleextravars="$1"
+    ;;
+#*  -A |--ansible-options 'options' options to pass to ansible or
+#*                                  ansible_playbook resp.
     -A|--ansible-options)
         shift
         ansibleoptions="$1"
@@ -231,6 +241,7 @@ while true ; do
         -P|--project)
             shift
             projectfilter="$1"
+            classfilter="project.$1"
         ;;
 #*  -r |--rsync-dry-run
         -r|--rsync-dry-run)
@@ -1004,8 +1015,10 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
-    ansible-*|put|fetch)
+    ansible-*|play|put|fetch)
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
+        [ -n "$_ansible_playbook" ] ||
+                        error "Missing system tool: ansible-playbook."
 
         if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
             nodefilter="${nodefilter}*"
@@ -1020,25 +1033,8 @@ case $1 in
             error "No class or node was specified.."
         fi
     ;;&
-#*  ansible-put src dest            ansible oversimplified copy module wrapper
-#*                                  'src' is /path/file on local host
-#*                                  'dest' is /path/.. on remote host
-    ansible-put|put)
-
-        src=$2
-        dest=$3
-
-        owner="" ; [ -z "$4" ] || owner="owner=$4"
-        mode="" ; [ -z "$5" ] || mode="mode=$5"
-
-        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
-        if [ 0 -ne "$force" ] ; then
-            echo "Press <Enter> to continue <Ctrl-C> to quit"
-            read
-        fi
-        $_ansible $hostpattern $ansible_root $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
-    ;;
-#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module wrapper
+#*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
+#*                                  wrapper
 #*                                  'src' is /path/file on remote host
 #*                                  'dest' is /path/ on local side
 #*                                  without 'flat' hostname is namespace
@@ -1057,12 +1053,52 @@ case $1 in
             flat="flat=true"
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
+        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+        $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+    ;;
+#*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
+#*                                  in your config.
+    ansible-list-plays|apls)
+    foundplays=( $($_find $playbooks/plays -maxdepth 1 -name "*.yml") )
+    for p in ${foundplays[@]} ; do
+        o=${p%.yml}
+        printf "\e[1;39m - ${o##*/}: \e[0;39m $p\n"
+    done
+    ;;
+#*  ansible-play (play) play        wrapper to ansible which also includes
+#*                                  custom plays stored in the config
+#*                                  file as '$playbooks'/plays.
+#*                                  'play' name of the play
+    ansible-play*|play)
+        p="$($_find $playbooks/plays -name ${2}.yml)"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root $ansibleextravars $ansibleoptions $p"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible_playbook -l $hostpattern $ansible_root $ansibleextravars $ansibleoptions $p
+    ;;
+#*  ansible-put src dest            ansible oversimplified copy module wrapper
+#*                                  'src' is /path/file on local host
+#*                                  'dest' is /path/.. on remote host
+    ansible-put|put)
+
+        src=$2
+        dest=$3
+
+        owner="" ; [ -z "$4" ] || owner="owner=$4"
+        mode="" ; [ -z "$5" ] || mode="mode=$5"
+
+        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
+        if [ 0 -ne "$force" ] ; then
+            echo "Press <Enter> to continue <Ctrl-C> to quit"
+            read
+        fi
+        $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
     *)
         if [ -n "$classfilter" ] ; then
