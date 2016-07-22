@@ -1034,7 +1034,7 @@ case $1 in
         fi
     ;;&
 #*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
-#*                                  wrapper
+#*                                  wrapper (prefer ansible-play instead)
 #*                                  'src' is /path/file on remote host
 #*                                  'dest' is /path/ on local side
 #*                                  without 'flat' hostname is namespace
@@ -1075,14 +1075,17 @@ case $1 in
 #*                                  'play' name of the play
     ansible-play*|play)
         p="$($_find $playbooks/plays -name ${2}.yml)"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root $ansibleextravars $ansibleoptions $p"
+        aev=""
+        [ -n "$ansibleextravars" ] && aev="-e"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root $aev "$ansibleextravars" $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root $ansibleextravars $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern $ansible_root $aev "$ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
+#*                                  (prefer ansible-play instead)
 #*                                  'src' is /path/file on local host
 #*                                  'dest' is /path/.. on remote host
     ansible-put|put)
