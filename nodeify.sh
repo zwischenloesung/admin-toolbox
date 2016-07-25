@@ -1290,7 +1290,19 @@ case $1 in
         else
             reclassmode="-i"
         fi
-        $_reclass -b $inventorydir $reclassmode
+        if [ -n "$projectfilter" ] ; then
+            nodes_uri="$inventorydir/nodes/$projectfilter"
+            if [ ! -d "$nodes_uri" ] ; then
+                error "No such project dir: $nodes_uri"
+            fi
+        elif [ -n "$classfilter" ] ; then
+            error "Classes are not supported here, use project filter instead."
+        fi
+        if [ -z "$nodes_uri" ] ; then
+            $_reclass -b $inventorydir $nodes_uri $reclassmode
+        else
+            $_reclass -b $inventorydir -u $nodes_uri $reclassmode
+        fi
     ;;
 #*  show-reclass-variables          show variables used in reclass that are
 #*                                  interpreted here
