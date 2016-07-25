@@ -1122,6 +1122,16 @@ case $1 in
             done
         done
     ;;
+#*  classes-list (cls)              list hosts sorted by class
+    cls|class*)
+        process_nodes process_classes ${nodes[@]}
+        for a in ${!classes_dict[@]} ; do
+            printf "\e[1;35m[$a]\n"
+            for h in ${classes_dict[$a]//:/ } ; do
+                printf "\e[0;32m$h\n"
+            done
+        done
+    ;;
 #*  clone [directory]               clone your current knowledge base into a new
 #*                                  path. (almost identical to 'init-clone';
 #*                                  see also 'clone-link').
@@ -1213,16 +1223,6 @@ case $1 in
 #*  list-classes (lsc)              list classes sorted by hosts
     lsc|list-c*)
         process_nodes list_classes ${nodes[@]}
-    ;;
-#*  classes-list (cls)              list hosts sorted by class
-    cls|class*)
-        process_nodes process_classes ${nodes[@]}
-        for a in ${!classes_dict[@]} ; do
-            printf "\e[1;35m[$a]\n"
-            for h in ${classes_dict[$a]//:/ } ; do
-                printf "\e[0;32m$h\n"
-            done
-        done
     ;;
 #*  list-debops-inventory           list the ansible inventory of debops hosts
     lsd|list-debops-inventory)
@@ -1329,7 +1329,8 @@ case $1 in
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" -e "{{ .* }}" $inventorydir/classes || true
     ;;
-#*  search-external variable        show in which file an external {{ variable }} is configured
+#*  search-external variable        show in which file an external
+#*                                  {{ variable }} is configured
     search-external)
         shift
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
