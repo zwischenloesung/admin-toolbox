@@ -1119,7 +1119,7 @@ case $1 in
         process_nodes process_applications ${nodes[@]}
         for a in ${!applications_dict[@]} ; do
             printf "\e[1;34m[$a]\n"
-            for h in ${applications_dict[$a]//:/ } ; do
+            for h in $(echo -e ${applications_dict[$a]//:/ \\n} | $_sort -u); do
                 printf "\e[0;32m$h\n"
             done
         done
