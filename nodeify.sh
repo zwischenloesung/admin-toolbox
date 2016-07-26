@@ -1075,14 +1075,16 @@ case $1 in
 #*                                  'play' name of the play
     ansible-play*|play)
         p="$($_find $playbooks/plays -name ${2}.yml)"
-        aev=""
-        [ -n "$ansibleextravars" ] && aev="-e"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root $aev "$ansibleextravars" $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e $ansibleextravars} $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root $aev "$ansibleextravars" $ansibleoptions $p
+        if [ -n "$ansibleextravars" ] ; then
+            $_ansible_playbook -l $hostpattern $ansible_root -e "$ansibleextravars" $ansibleoptions $p
+        else
+            $_ansible_playbook -l $hostpattern $ansible_root $ansibleoptions $p
+        fi
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
