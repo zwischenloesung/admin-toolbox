@@ -1129,7 +1129,7 @@ case $1 in
         process_nodes process_classes ${nodes[@]}
         for a in ${!classes_dict[@]} ; do
             printf "\e[1;35m[$a]\n"
-            for h in ${classes_dict[$a]//:/ } ; do
+            for h in $( echo -e ${classes_dict[$a]//:/ \\n} | $_sort -u ) ; do
                 printf "\e[0;32m$h\n"
             done
         done
