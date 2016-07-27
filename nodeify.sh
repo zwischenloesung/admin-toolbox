@@ -383,35 +383,35 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^  os.distro:/ {
+            /^  os__distro:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_distro="$2
                 }
                 next
             }
-            /^  os.codename:/ {
+            /^  os__codename:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_codename="$2
                 }
                 next
             }
-            /^  os.release:/ {
+            /^  os__release:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_release="$2
                 }
                 next
             }
-            /^  os.package_selections:/ {
+            /^  os__package-selections:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   print "os_package_selections="$2
                 }
                 next
             }
-            /^  host.infrastructure:/ {
+            /^  host__infrastructure:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   l=length($1)
@@ -427,7 +427,7 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^  host.type:/ {
+            /^  host__type:/ {
                 if ( metamode == "parameters" ) {
                   mode="none"
                   l=length($1)
