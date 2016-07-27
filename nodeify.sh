@@ -1055,12 +1055,12 @@ case $1 in
             flat="flat=true"
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
 #*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
@@ -1081,12 +1081,12 @@ case $1 in
         p="$($_find $playbooks/plays -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e} '$ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e} "$ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1100,12 +1100,12 @@ case $1 in
         owner="" ; [ -z "$4" ] || owner="owner=$4"
         mode="" ; [ -z "$5" ] || mode="mode=$5"
 
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
     *)
         if [ -n "$classfilter" ] ; then
