@@ -798,16 +798,18 @@ list_applications()
 {
     list_node $n
     for a in ${applications[@]} ; do
-        printf "\e[0;33m - $a\n"
+        printf "\e[0;36m - $a\n"
     done
+    printf "\e[0;39m"
 }
 
 list_classes()
 {
     list_node $n
     for c in ${classes[@]} ; do
-        printf "\e[0;33m - $c\n"
+        printf "\e[0;35m - $c\n"
     done
+    printf "\e[0;39m"
 }
 
 list_node_stores()
@@ -1063,10 +1065,12 @@ case $1 in
 #*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
     ansible-list-plays|apls)
-    foundplays=( $($_find $playbooks/plays -maxdepth 1 -name "*.yml") )
+    foundplays=( $($_find $playbooks/plays -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
-        printf "\e[1;39m - ${o##*/}: \e[0;39m $p\n"
+        printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
+        $_grep "^#\* " $p | $_sed 's;^#\*;  ;'
+        printf "\e[0;39m"
     done
     ;;
 #*  ansible-play (play) play        wrapper to ansible which also includes
@@ -1075,12 +1079,14 @@ case $1 in
 #*                                  'play' name of the play
     ansible-play*|play)
         p="$($_find $playbooks/plays -name ${2}.yml)"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e $ansibleextravars} $ansibleoptions $p"
+        [ -n "$p" ] ||
+            error "There is no play called ${2}.yml in $playbooks/plays"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e} '$ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e} "$ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1119,6 +1125,7 @@ case $1 in
                 printf "\e[0;32m$h\n"
             done
         done
+        printf "\e[0;39m"
     ;;
 #*  classes-list (cls)              list hosts sorted by class
     cls|class*)
@@ -1129,6 +1136,7 @@ case $1 in
                 printf "\e[0;32m$h\n"
             done
         done
+        printf "\e[0;39m"
     ;;
 #*  clone [directory]               clone your current knowledge base into a new
 #*                                  path. (almost identical to 'init-clone';
