@@ -177,17 +177,17 @@ done
 #* options:
 while true ; do
     case "$1" in
-#*  -a |--ansible-extra-vars 'vars' options to pass to ansible
-    -a|--ansible-extra-vars)
-        shift
-        ansibleextravars="$1"
-    ;;
+#*  -a |--ansible-extra-vars 'vars' variables to pass to ansible
+        -a|--ansible-extra-vars)
+            shift
+            ansibleextravars="$1"
+        ;;
 #*  -A |--ansible-options 'options' options to pass to ansible or
 #*                                  ansible_playbook resp.
-    -A|--ansible-options)
-        shift
-        ansibleoptions="$1"
-    ;;
+        -A|--ansible-options)
+            shift
+            ansibleoptions="$1"
+        ;;
 #*  -c |--config conffile           alternative config file
         -c|--config)
             shift
@@ -199,14 +199,14 @@ while true ; do
         ;;
 #*  -C |--class class               only process member nodes of this class
 #*                                  (see reclass classes)
-    -C|--class)
-        shift
-        classfilter="$1"
-    ;;
+        -C|--class)
+            shift
+            classfilter="$1"
+        ;;
 #*  -f |--force                     do not ask before changing anything
-    -f|--force)
-        force=0
-    ;;
+        -f|--force)
+            force=0
+        ;;
 #*  -h |--help                      print this help
         -h|--help)
             print_help
@@ -1053,12 +1053,12 @@ case $1 in
             flat="flat=true"
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
 #*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
@@ -1080,11 +1080,7 @@ case $1 in
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        if [ -n "$ansibleextravars" ] ; then
-            $_ansible_playbook -l $hostpattern $ansible_root -e "$ansibleextravars" $ansibleoptions $p
-        else
-            $_ansible_playbook -l $hostpattern $ansible_root $ansibleoptions $p
-        fi
+        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1098,12 +1094,12 @@ case $1 in
         owner="" ; [ -z "$4" ] || owner="owner=$4"
         mode="" ; [ -z "$5" ] || mode="mode=$5"
 
-        echo "wrapping $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root $ansibleextravars $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e} "$ansibleextravars" $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
     *)
         if [ -n "$classfilter" ] ; then
