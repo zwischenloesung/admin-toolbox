@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 0.2
+#** Version: 0.3
 #* This script takes project based file hierarchy trees and
 #* unifies them into one tree for a certain node. We use it to
 #* build host based configs from role based hierarchies.
