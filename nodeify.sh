@@ -442,8 +442,9 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^  debian_.*_packages:$/ {
+            /^  debian-.*-packages:$/ {
                 if ( metamode == "parameters" ) {
+                  gsub("-", "_")
                   mode=substr($1, 0, length($1)-1)
                 }
                 next
