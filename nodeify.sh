@@ -1056,12 +1056,12 @@ case $1 in
             flat="flat=true"
         fi
 
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m fetch -a 'src=$src dest=$dest $flat'"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
 #*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
@@ -1101,12 +1101,12 @@ case $1 in
         owner="" ; [ -z "$4" ] || owner="owner=$4"
         mode="" ; [ -z "$5" ] || mode="mode=$5"
 
-        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:--e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
+        echo "wrapping $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions -m copy -a 'src=$src dest=$dest' $owner $mode"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible $hostpattern $ansible_root ${ansibleextravars:--e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
+        $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m copy -a "src=$src dest=$dest" $owner $mode
     ;;
     *)
         if [ -n "$classfilter" ] ; then
@@ -1344,9 +1344,18 @@ case $1 in
 #*  search-all                      show what variables are used
     search-all)
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" -e "{{ .* }}" $inventorydir/nodes || true
+        $_grep --color -Hn -R -e "^.*:" -e "\s.*:" -e "\${.*}" -e "{{ .* }}" $inventorydir/nodes || true
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
-        $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${.*}" -e "{{ .* }}" $inventorydir/classes || true
+        $_grep --color -Hn -R -e "^.*:" -e "\s.*:" -e "\${.*}" -e "{{ .* }}" $inventorydir/classes || true
+    ;;
+#*  search-class class              show which class or node refers to a given
+#*                                  class
+    search-class)
+        shift
+        printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
+        $_grep --color -Hn -R -e "^  - $1$" $inventorydir/nodes || true
+        printf "\e[1;33mSearch string is found in classes:\e[0m\n"
+        $_grep --color -Hn -R -e "^  - $1$" $inventorydir/classes || true
     ;;
 #*  search-external variable        show in which file an external
 #*                                  {{ variable }} is configured
