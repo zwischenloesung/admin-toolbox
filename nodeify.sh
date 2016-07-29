@@ -1018,7 +1018,7 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
 
 #* actions:
 case $1 in
-    ansible-*|play|put|fetch)
+    ansible-fetch*|ansible-put*|ansible-play*|play|put|fetch)
         [ -n "$_ansible" ] || error "Missing system tool: ansible."
         [ -n "$_ansible_playbook" ] ||
                         error "Missing system tool: ansible-playbook."
