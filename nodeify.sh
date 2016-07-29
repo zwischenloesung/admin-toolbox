@@ -537,36 +537,36 @@ re_define_parsed_variables()
     applications=()
 #*** Array:                 classes
     classes=()
-#*** Array:                 debops
-    debops=()
 #*** String:                environemnt
     environement=""
-#*** String:                hostinfrastructure
+#*** Array:                 parameters.debops
+    debops=()
+#*** String:                parameters.host__infrastructure
     hostinfrastructure=""
-#*** String:                hostlocations
+#*** String:                parameters.host__locations
     hostlocation=""
-#*** String:                hosttype
+#*** String:                parameters.host__type
     hosttype=""
-#*** String:                os_codename
+#*** String:                parameters.os__codename
     os_codename=""
-#*** String:                os_distro
+#*** String:                parameters.os__distro
     os_distro=""
-#*** String:                os_name
+#*** String:                parameters.os__name
     os_name=""
-#*** String:                os_package_selections
+#*** String:                parameters.os__package-selections
     os_package_selections=""
-#*** String:                os_release
+#*** String:                parameters.os__release
     os_release=""
-#*** String                 project
+#*** String                 parameters.project
     project=""
-#*** Array:                 storagedirs
+#*** Array:                 parameters.storage-dirs
     storagedirs=()
-#*** Array:                 remergedirect
+#*** Array:                 parameters.re-merge.direct
     remergedirect=()
-#*** Associative array:     remergecustomsrc
+#*** Associative array:     parameters.re-merge.custom.src
     declare -A remergecustomsrc
     remergecustomsrc=()
-#*** Associative array:     remergecustomdest
+#*** Associative array:     parameters.re-merge.custom.dest
     declare -A remergecustomdest
     remergecustomdest=()
 }
@@ -1325,6 +1325,7 @@ case $1 in
         echo " Where to search for reclass:         inventorydir"
         echo " Where to put (temp.) results:        targetdir"
         echo " Local directories to replace:        localdirs"
+        echo " Ansible playbooks ('./plays/'):      playbooks"
         echo ""
         echo "The above 'localdirs' can be used in reclass like any other"
         echo "external variable, i.e. '{{ name }}'. Currently these names"
