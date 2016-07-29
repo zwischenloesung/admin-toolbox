@@ -1311,27 +1311,35 @@ case $1 in
             $_reclass -b $inventorydir -u $nodes_uri $reclassmode
         fi
     ;;
-#*  show-reclass-variables          show variables used in reclass that are
+#*  show-reclass-summary            show variables used in reclass that are
 #*                                  interpreted here
     show-rec*)
-        echo "The following variables can be used in reclass and will"
-        echo "be interpreted (and potentially used) by this script."
-        echo "Note: Of course you can use other variables as well,"
-        echo "this is just a list of what $0"
-        echo "is directly aware of."
+        printf "The following variables can be used in reclass and will\n"
+        printf "be interpreted (and potentially used) by this script.\n"
+        printf "\n"
+        printf "\e[1mNote:\e[0m Of course you can use other variables as well,\n"
+        printf "this is just a list of what $0\n"
+        printf "is directly aware of.\n"
+        printf "\n"
+        printf " \e[1mType                   Variable\e[0m\n"
         $_grep "^#\*\*\* " $0 | $_sed_forced 's;^#\*\*\*;;'
-        echo ""
-        echo "Furthermore these variables are needed in $conffile"
-        echo " Where to search for reclass:         inventorydir"
-        echo " Where to put (temp.) results:        targetdir"
-        echo " Local directories to replace:        localdirs"
-        echo " Ansible playbooks ('./plays/'):      playbooks"
-        echo ""
-        echo "The above 'localdirs' can be used in reclass like any other"
-        echo "external variable, i.e. '{{ name }}'. Currently these names"
-        echo "are used in your config:"
+        printf "\n"
+        printf "Furthermore these variables are needed in $conffile\n"
+        printf " Where to search for reclass:         inventorydir\n"
+        printf " Where to put (temp.) results:        targetdir\n"
+        printf " Local directories to replace:        localdirs\n"
+        printf " Ansible playbooks (in './plays/'):   playbooks\n"
+        printf "\n"
+        printf "Currently these contain the following values:\n"
+        printf " 'inventorydir': $inventorydir\n"
+        printf " 'targetdir': $targetdir\n"
+        printf " 'playbooks': $playbooks\n"
+        printf "\n"
+        printf " The above 'localdirs' can be used in reclass like any other\n"
+        printf " external variable, i.e. '{{ name }}'. Currently these names\n"
+        printf " are used in your config:\n"
         for d in ${!localdirs[@]} ; do
-            echo " $d: ${localdirs[$d]}"
+            printf "  $d: ${localdirs[$d]}\n"
         done
     ;;
 #*  search variable                 show in which file a variable is configured
