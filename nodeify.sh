@@ -60,7 +60,7 @@ inventorydir=""
 ## a collection of ansible plays to be used directly by this wrapper
 playbooks=""
 ## just a directory where output is stored temporarily and for external usage
-targetdir=""
+workdir=""
 ## specify all local directories you intend to use in your reclass hosts in this
 ## associative array, now you can reference them by using their {{ key }}
 localdirs=()
@@ -915,7 +915,7 @@ re_merge_fix_in()
         suffix=$(echo $basename | $_grep '\w\.' | $_sed 's/.*\.//')
         prefix=${basename/.$suffix}
         [ -n "$suffix" ] && suffix=".$suffix"
-        $_mv $f $targetdir/$targetpath/${prefix}.${n}$suffix
+        $_mv $f $workdir/$targetpath/${prefix}.${n}$suffix
     done
 }
 
@@ -929,7 +929,7 @@ re_merge_fix_pre()
         basename=$($_basename $f)
         fullpath=${f%%$basename}
         targetpath=${fullpath/$1}
-        $_mv $f $targetdir/$targetpath/${n}.${basename}
+        $_mv $f $workdir/$targetpath/${n}.${basename}
     done
 }
 
@@ -943,7 +943,7 @@ re_merge_fix_post()
         basename=$($_basename $f)
         fullpath=${f%%$basename}
         targetpath=${fullpath/$1}
-        $_mv $f $targetdir/$targetpath/${basename}.${in}
+        $_mv $f $workdir/$targetpath/${basename}.${in}
     done
 }
 
@@ -956,8 +956,8 @@ re_merge_exceptions_first()
 
 merge_all()
 {
-    if [ ! -d "$targetdir" ] ; then
-        die "Target directory '$targetdir' does not exist!"
+    if [ ! -d "$workdir" ] ; then
+        die "Target directory '$workdir' does not exist!"
     fi
     src_subdir=""
     trgt_subdir=""
@@ -968,17 +968,17 @@ merge_all()
     case "$merge_mode" in
         dir|in|post|pre|custom)
             for d in ${storagedirs[@]} ; do
-                do_sync "$d/$src/" "$targetdir/$n/$trgt/"
+                do_sync "$d/$src/" "$workdir/$n/$trgt/"
             done
         ;;&
         dir)
         ;;
         in|post|pre)
-            t="$targetdir/$n/"
+            t="$workdir/$n/"
             for d in $($_find $t -type d) ; do
-                $_mkdir -p $targetdir/${d/$t/}
+                $_mkdir -p $workdir/${d/$t/}
             done
-            re_merge_exceptions_first $n $targetdir
+            re_merge_exceptions_first $n $workdir
             re_merge_fix_$merge_mode $t
 
             t="${t}*"
@@ -991,7 +991,7 @@ merge_all()
             done
         ;;
         custom)
-            re_merge_custom $targetdir/$n/
+            re_merge_custom $workdir/$n/
         ;;
         *)
             die "merge mode '$merge_mode' is not supported.."
@@ -1080,12 +1080,12 @@ case $1 in
         p="$($_find $playbooks/plays -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e 'workdir="$targetdir" $ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e "workdir='$targetdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
@@ -1254,31 +1254,31 @@ case $1 in
         process_nodes list_node_type ${nodes[@]}
     ;;
 #*  merge-all (mg)                  just merge all storage directories - flat
-#*                                  to $targetdir
+#*                                  to $workdir
     merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-custom (mc)               merge after custom rules defined in reclass
-#*                                  in $targetdir, then move to the destination
+#*                                  in $workdir, then move to the destination
 #*                                  as specified
     merge-cu*|mc)
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
-#*                                  to $targetdir
+#*                                  to $workdir
     merge-pr*|mpr)
         merge_mode="pre"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-in (mi)                   merge storage dirs and infix with hostname
-#*                                  to $targetdir
+#*                                  to $workdir
     merge-i*|mi)
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-post (mpo)                merge storage dirs and postfix with hostname
-#*                                  to $targetdir
+#*                                  to $workdir
     merge-po*|mpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
@@ -1329,14 +1329,14 @@ case $1 in
         printf "\n"
         printf "Furthermore these variables are needed in $conffile\n"
         printf " Where to search for reclass:         inventorydir\n"
-        printf " Where to put (temp.) results:        targetdir\n"
+        printf " Where to put (temp.) results:        workdir\n"
         printf " Local directories to replace:        localdirs\n"
         printf " Ansible playbooks (in './plays/'):   playbooks\n"
         printf "\n"
         printf "Currently these contain the following values:\n"
-        printf " 'inventorydir': $inventorydir\n"
-        printf " 'targetdir': $targetdir\n"
-        printf " 'playbooks': $playbooks\n"
+        printf " 'inventorydir':    $inventorydir\n"
+        printf " 'workdir':         $workdir\n"
+        printf " 'playbooks':       $playbooks\n"
         printf "\n"
         printf " The above 'localdirs' can be used in reclass like any other\n"
         printf " external variable, i.e. '{{ name }}'. Currently these names\n"
