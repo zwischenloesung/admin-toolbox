@@ -1254,25 +1254,31 @@ case $1 in
         process_nodes list_node_type ${nodes[@]}
     ;;
 #*  merge-all (mg)                  just merge all storage directories - flat
+#*                                  to $targetdir
     merge|merge-a*|mg)
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-custom (mc)               merge after custom rules defined in reclass
+#*                                  in $targetdir, then move to the destination
+#*                                  as specified
     merge-cu*|mc)
         merge_mode="custom"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-pre (mpr)                 merge storage dirs and prefix with hostname
+#*                                  to $targetdir
     merge-pr*|mpr)
         merge_mode="pre"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-in (mi)                   merge storage dirs and infix with hostname
+#*                                  to $targetdir
     merge-i*|mi)
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
 #*  merge-post (mpo)                merge storage dirs and postfix with hostname
+#*                                  to $targetdir
     merge-po*|mpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
