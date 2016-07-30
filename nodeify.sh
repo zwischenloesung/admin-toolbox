@@ -564,10 +564,10 @@ re_define_parsed_variables()
 #*** Array:                 parameters.re-merge.direct
     remergedirect=()
 #*** Associative array:     parameters.re-merge.custom.src
-    declare -A remergecustomsrc
+    declare -g -A remergecustomsrc
     remergecustomsrc=()
 #*** Associative array:     parameters.re-merge.custom.dest
-    declare -A remergecustomdest
+    declare -g -A remergecustomdest
     remergecustomdest=()
 }
 re_define_parsed_variables
