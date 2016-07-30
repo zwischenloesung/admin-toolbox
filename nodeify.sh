@@ -1080,12 +1080,12 @@ case $1 in
         p="$($_find $playbooks/plays -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root -e 'workdir="$targetdir" $ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e 'workdir="$targetdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root -e "workdir='$targetdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e "workdir='$targetdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
