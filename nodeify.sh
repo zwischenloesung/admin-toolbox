@@ -588,6 +588,7 @@ parse_node()
             $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
                   -v p_vals=$awk_var_p_vals "$reclass_parser"
     else
+
         eval $(\
             $_reclass -b $inventorydir -n $1 |\
             $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
@@ -1079,12 +1080,12 @@ case $1 in
         p="$($_find $playbooks/plays -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e '$ansibleextravars'} $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook -l $hostpattern $ansible_root -e 'workdir="$targetdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions $p
+        $_ansible_playbook -l $hostpattern $ansible_root -e "workdir='$targetdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
