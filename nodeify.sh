@@ -583,9 +583,6 @@ parse_node()
         awk_var_p_keys="$k;$awk_var_p_keys"
         awk_var_p_vals="${localdirs[$k]};$awk_var_p_vals"
     done
-    OLDIFS=$IFS
-    IFS="
-"
     if [ $parser_dryrun -eq 0 ] ; then
         $_reclass -b $inventorydir -n $1 |\
             $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
@@ -597,7 +594,6 @@ parse_node()
                   -v p_vals=$awk_var_p_vals "$reclass_parser"
         )
     fi
-    IFS=$OLDIFS
 }
 
 clone_config()
