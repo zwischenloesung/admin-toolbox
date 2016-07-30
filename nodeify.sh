@@ -1272,8 +1272,7 @@ case $1 in
         merge_mode="in"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  merge-post (mpo)                merge storage dirs and postfix with
-#*                                  hostname
+#*  merge-post (mpo)                merge storage dirs and postfix with hostname
     merge-po*|mpo)
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
