@@ -261,6 +261,12 @@ while true ; do
             print_version
             exit
         ;;
+#*  -w |--workdir directory         Manually specify a temporary workdir
+        -w|--workdir)
+            shift
+            workdir=$1
+            $_mkdir -p $workdir
+        ;;
         -*|--*)
             error "option $1 not supported"
         ;;
