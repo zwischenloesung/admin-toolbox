@@ -851,6 +851,7 @@ list_re_merge_custom()
         printf "\e[0;33m   file: \e[0;35m${remergecustomsrc[$m]}\n"
         printf "\e[0;33m   dest: \e[0;36m${remergecustomdest[$m]}\n"
     done
+    printf "\e[0;39m"
 }
 
 list_node_arrays()
@@ -1280,7 +1281,7 @@ case $1 in
         merge_mode="post"
         process_nodes merge_all ${nodes[@]}
     ;;
-#*  re-merge                        remerge as specified in '--merge mode'
+##*  re-merge                        remerge as specified in '--merge mode'
 #    rem|re-merge*)
 #        process_nodes re-merge ${nodes[@]}
 #    ;;
