@@ -213,11 +213,11 @@ while true ; do
             exit 0
         ;;
 #*  -m |--merge mode                specify how to merge, available modes:
-#*                                    custom based on "re-merge-custom:"
-#*                                    dir    nodename based dirs (default)
-#*                                    in     nodename infixed files
-#*                                    pre    nodename prefixed files
-#*                                    post   nodename postfixed files
+#*                                    custom    based on "re-merge-custom"
+#*                                    dir       nodename based dirs (default)
+#*                                    in        nodename infixed files
+#*                                    pre       nodename prefixed files
+#*                                    post      nodename postfixed files
         -m|--merge)
             shift
             merge_mode=$1
