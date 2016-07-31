@@ -1018,7 +1018,7 @@ nodes=( $($_reclass -b $inventorydir $reclass_filter -i |\
             $_awk 'BEGIN {node=1}; \
                    /^nodes:/ {node=0};\
                    /^  \w/ {if (node == 0) {print now $0}}' |\
-            $_tr -d ":" ) )
+            $_tr -d ":" | $_sort -r ) )
 
 #* actions:
 case $1 in
