@@ -1067,9 +1067,9 @@ case $1 in
         fi
         $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
-#*  ansible-list-plays (apls)       list all available plays (see 'playbooks'
+#*  ansible-plays-list (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
-    ansible-list-plays|apls)
+    ansible-plays-list|apls|pls)
     foundplays=( $($_find $playbooks/plays -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
