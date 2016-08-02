@@ -1070,7 +1070,7 @@ case $1 in
 #*  ansible-plays-list (apls)       list all available plays (see 'playbooks'
 #*                                  in your config.
     ansible-plays-list|apls|pls)
-    foundplays=( $($_find $playbooks/plays -maxdepth 1 -name "*.yml" | $_sort -u) )
+    foundplays=( $($_find $playbooks -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
@@ -1083,7 +1083,7 @@ case $1 in
 #*                                  file as '$playbooks'/plays.
 #*                                  'play' name of the play
     ansible-play*|play)
-        p="$($_find $playbooks/plays -name ${2}.yml)"
+        p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
         echo "wrapping $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
