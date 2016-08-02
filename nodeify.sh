@@ -1124,7 +1124,7 @@ case $1 in
 #*  applications-list (als)         list hosts sorted by applications
     als|app*)
         process_nodes process_applications ${nodes[@]}
-        for a in ${!applications_dict[@]} ; do
+        for a in $( echo ${!applications_dict[@]} | $_tr " " "\n" | $_sort ) ; do
             printf "\e[1;34m[$a]\n"
             for h in $(echo -e ${applications_dict[$a]//:/ \\n} | $_sort -u); do
                 printf "\e[0;32m$h\n"
@@ -1135,7 +1135,7 @@ case $1 in
 #*  classes-list (cls)              list hosts sorted by class
     cls|class*)
         process_nodes process_classes ${nodes[@]}
-        for a in ${!classes_dict[@]} ; do
+        for a in $( echo ${!classes_dict[@]} | $_tr " " "\n" | $_sort ) ; do
             printf "\e[1;35m[$a]\n"
             for h in $( echo -e ${classes_dict[$a]//:/ \\n} | $_sort -u ) ; do
                 printf "\e[0;32m$h\n"
