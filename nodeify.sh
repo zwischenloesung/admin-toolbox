@@ -81,8 +81,9 @@ projectfilter=""
 
 ansible_root=""
 force=1
-
 parser_dryrun=1
+pass_ask_pass=""
+verbose=""
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
@@ -212,6 +213,10 @@ while true ; do
             print_help
             exit 0
         ;;
+#*  -k |--ask-pass                  prompt for the password (see ansible -k)
+        -k|--ask-pass)
+            pass_ask_pass="-k"
+        ;;
 #*  -m |--merge mode                specify how to merge, available modes:
 #*                                    custom    based on "re-merge-custom"
 #*                                    dir       nodename based dirs (default)
@@ -256,8 +261,12 @@ while true ; do
         -S|--ansible-bec*)
             ansible_root="--become-user root -K"
         ;;
-#*  -v |--version
-        -v|--version)
+#*  -v |--verbose
+        -v|--verbose)
+            verbose="-v"
+        ;;
+#*  -V |--version
+        -V|--version)
             print_version
             exit
         ;;
@@ -1086,12 +1095,12 @@ case $1 in
         p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook ${verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook -l $hostpattern ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook ${verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
