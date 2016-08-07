@@ -478,6 +478,12 @@ reclass_parser='BEGIN {
                 }
                 next
             }
+            /^  ansible:$/ {
+                if ( metamode == "parameters" ) {
+                    metamode=metamode":ansible"
+                    mode="ansible"
+                }
+            }
             /^  re-merge:$/ {
                 if ( metamode == "parameters" ) {
                     metamode=metamode":remerge"
@@ -528,6 +534,10 @@ reclass_parser='BEGIN {
             /^    .*$/ {
                 if ( metamode == "parameters:debops" ) {
 #print "debops__="metamode
+                    next
+                } else if ( metamode == "parameters:ansible" ) {
+                    sub(":", "", $1)
+                    print "ansible__"$1"='"'"'" $2 "'"'"'"
                     next
                 }
             }
