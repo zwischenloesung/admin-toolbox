@@ -536,8 +536,15 @@ reclass_parser='BEGIN {
 #print "debops__="metamode
                     next
                 } else if ( metamode == "parameters:ansible" ) {
-                    sub(":", "", $1)
-                    print "ansible_meta[\""$1"\"]='"'"'" $2 "'"'"'"
+                    gsub("\"", "\x22")
+                    gsub(":", "\x3A")
+                    # pure trial and error as I just dont get it..
+                    gsub("%", "%%")
+                    a=$1
+                    sub(":", "", a)
+                    b=$0
+                    sub(" *"$1" ", "", b)
+                    print "ansible_meta[\""a"\"]='"'"'" b "'"'"'"
                     next
                 }
             }
@@ -744,14 +751,19 @@ ansible_connection_test()
 {
     if [ "${ansible_meta['prompt_password']}" == "true" ] ; then
         printf "\e[1;33mWarning: "
-        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'True'.\n"
-        printf "         You probably want to use the '-k' flag\n"
+        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'true'.\n"
+        printf "         You probably want to use the '-k' flag.\n"
+    fi
+    if [ -n "${ansible_meta['ssh_common_args']}" ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n\e[0m has ansible:ssh_common_args set to '${ansible_meta['ssh_common_args']}'.\n"
+        printf "         Please check your ssh configs for that host if you encounter problems.\n"
     fi
     for l in connect_timeout use_scp ; do
         if [ -n "${ansible_meta[$l]}" ] ; then
             printf "\e[1;33mWarning: "
-            printf "\e[1;39m$n\e[0m has $l set to ${ansible_meta[$l]}.\n"
-            printf "         Please control your (.)ansible.cfg\n"
+            printf "\e[1;39m$n\e[0m has ansible:$l set to '${ansible_meta[$l]}'.\n"
+            printf "         Please control your (.)ansible.cfg if you encounter problems.\n"
         fi
     done
 }
@@ -1127,7 +1139,6 @@ case $1 in
 #*                                  file as '$playbooks'/plays.
 #*                                  'play' name of the play
     ansible-play*|play)
-        process_nodes ansible_connection_test ${nodes[@]}
         p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
