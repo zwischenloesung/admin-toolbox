@@ -537,7 +537,7 @@ reclass_parser='BEGIN {
                     next
                 } else if ( metamode == "parameters:ansible" ) {
                     sub(":", "", $1)
-                    print "ansible__"$1"='"'"'" $2 "'"'"'"
+                    print "ansible_meta[\""$1"\"]='"'"'" $2 "'"'"'"
                     next
                 }
             }
@@ -558,6 +558,9 @@ reclass_parser='BEGIN {
 ## define these in parse_node()
 re_define_parsed_variables()
 {
+#*** Associative Array:     ansible_meta
+    declare -g -A ansible_meta
+    ansible_meta=()
 #*** Array:                 applications
     applications=()
 #*** Array:                 classes
@@ -613,7 +616,6 @@ parse_node()
             $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
                   -v p_vals=$awk_var_p_vals "$reclass_parser"
     else
-
         eval $(\
             $_reclass -b $inventorydir -n $1 |\
             $_awk -v p_len=${#localdirs[@]} -v p_keys=$awk_var_p_keys \
@@ -718,7 +720,7 @@ connect_node()
 connect_well_known()
 {
     echo "Please note that for the moment we do not have real means for"
-    echo "automatically do this step for you, instead we just list some"
+    echo "automatically doing this step for you, instead we just list some"
     echo "options here:"
     echo " - ansible:    you need to set the 'hostfile' variable in the"
     echo "               (e.g. local) ansible.cfg to point to the newly"
@@ -731,6 +733,27 @@ connect_well_known()
     echo "               always be overwritten by debops. I do not know"
     echo "               any way to work around that problem yet. You can"
     echo "               only use the --inventory option at the moment."
+}
+
+noop()
+{
+    echo -n ""
+}
+
+ansible_connection_test()
+{
+    if [ "${ansible_meta['prompt_password']}" == "true" ] ; then
+        printf "\e[1;33mWarning: "
+        printf "\e[1;39m$n\e[0m has ansible:prompt_password set to 'True'.\n"
+        printf "         You probably want to use the '-k' flag\n"
+    fi
+    for l in connect_timeout use_scp ; do
+        if [ -n "${ansible_meta[$l]}" ] ; then
+            printf "\e[1;33mWarning: "
+            printf "\e[1;39m$n\e[0m has $l set to ${ansible_meta[$l]}.\n"
+            printf "         Please control your (.)ansible.cfg\n"
+        fi
+    done
 }
 
 process_nodes()
@@ -1046,6 +1069,8 @@ case $1 in
         [ -n "$_ansible_playbook" ] ||
                         error "Missing system tool: ansible-playbook."
 
+        # check for some connection settings in config or for -k option
+        process_nodes ansible_connection_test ${nodes[@]}
         if [ -n "$nodefilter" ] && [ -n "${nodefilter//*\.*/}" ] ; then
             nodefilter="${nodefilter}*"
         fi
@@ -1102,6 +1127,7 @@ case $1 in
 #*                                  file as '$playbooks'/plays.
 #*                                  'play' name of the play
     ansible-play*|play)
+        process_nodes ansible_connection_test ${nodes[@]}
         p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
