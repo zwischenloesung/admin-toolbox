@@ -49,7 +49,7 @@ dryrun=1
 needsroot=1
 
 # rsync mode
-rsync_options="-a -v -m --exclude=.keep"
+rsync_options="-a -m --exclude=.keep"
 
 merge_only_this_subdir=""
 merge_mode="dir"
@@ -83,7 +83,7 @@ ansible_root=""
 force=1
 parser_dryrun=1
 pass_ask_pass=""
-verbose=""
+ansible_verbose=""
 
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
@@ -263,7 +263,8 @@ while true ; do
         ;;
 #*  -v |--verbose
         -v|--verbose)
-            verbose="-v"
+            ansible_verbose="-vvv"
+            rsync_options="$rsync_options -v"
         ;;
 #*  -V |--version
         -V|--version)
@@ -1142,12 +1143,12 @@ case $1 in
         p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
             error "There is no play called ${2}.yml in $playbooks/plays"
-        echo "wrapping $_ansible_playbook ${verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
+        echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
             read
         fi
-        $_ansible_playbook ${verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
+        $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e "workdir='$workdir' $ansibleextravars" $ansibleoptions $p
     ;;
 #*  ansible-put src dest            ansible oversimplified copy module wrapper
 #*                                  (prefer ansible-play instead)
