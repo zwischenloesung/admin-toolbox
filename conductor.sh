@@ -231,8 +231,8 @@ while true ; do
         -n|--dry-run)
             dryrun=0
         ;;
-#*  -N |--node node                 only process a certain node
-        -N|--node)
+#*  -H |--host host                 only process a certain host
+        -H|--host|-N|--node)
             shift
             nodefilter="$1"
         ;;
