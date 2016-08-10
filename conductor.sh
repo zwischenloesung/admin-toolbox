@@ -252,6 +252,10 @@ while true ; do
         -r|--rsync-dry-run)
             rsync_options="$rsync_options -n"
         ;;
+#*  -R |--ansible-dry-run
+        -R|--ansible-dry-run)
+            ansibleoptions="$ansibleoptions -C"
+        ;;
 #*  -s |--subdir-only-merge         concentrate on this subdir only
         -s|--subdir-only-merge)
             shift
