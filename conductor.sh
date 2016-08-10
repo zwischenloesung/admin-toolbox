@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 0.6
+#** Version: 1.0
 #* This script takes project based file hierarchy trees and
 #* unifies them into one tree for a certain node. We use it to
 #* build host based configs from role based hierarchies.
@@ -37,7 +37,7 @@ declare -A localdirs
 ### you may copy the following variables into this file for having your own
 ### local config, everything after the last slash will also be searched for
 ### in the current directory in order to support independent project dirs.
-conffile=~/.nodeify
+conffile=~/.conductor
 ### {{{
 
 # for status mode concentrate on this ip protocol
