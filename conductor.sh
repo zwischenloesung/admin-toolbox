@@ -58,7 +58,7 @@ merge_mode="dir"
 ## the path to the core: the git repository storing the reclass-cmdb
 inventorydir=""
 ## a collection of ansible plays to be used directly by this wrapper
-playbooks=""
+playbookdir=""
 ## just a directory where output is stored temporarily and for external usage
 workdir=""
 ## specify all local directories you intend to use in your reclass hosts in this
@@ -1124,10 +1124,10 @@ case $1 in
         fi
         $_ansible $hostpattern $ansible_root ${ansibleextravars:+-e "$ansibleextravars"} $ansibleoptions -m fetch -a "src=$src dest=$dest $flat"
     ;;
-#*  ansible-plays-list (apls)       list all available plays (see 'playbooks'
+#*  ansible-plays-list (apls)       list all available plays (see 'playbookdir'
 #*                                  in your config.
     ansible-plays-list|apls|pls)
-    foundplays=( $($_find $playbooks -maxdepth 1 -name "*.yml" | $_sort -u) )
+    foundplays=( $($_find $playbookdir -maxdepth 1 -name "*.yml" | $_sort -u) )
     for p in ${foundplays[@]} ; do
         o=${p%.yml}
         printf "\e[1;39m - ${o##*/}: \e[0;32m $p\e[0;35m\n"
@@ -1137,12 +1137,12 @@ case $1 in
     ;;
 #*  ansible-play (play) play        wrapper to ansible which also includes
 #*                                  custom plays stored in the config
-#*                                  file as '$playbooks'/plays.
+#*                                  file as '$playbookdir'.
 #*                                  'play' name of the play
     ansible-play*|play)
-        p="$($_find $playbooks -maxdepth 1 -name ${2}.yml)"
+        p="$($_find $playbookdir -maxdepth 1 -name ${2}.yml)"
         [ -n "$p" ] ||
-            error "There is no play called ${2}.yml in $playbooks/plays"
+            error "There is no play called ${2}.yml in $playbookdir"
         echo "wrapping $_ansible_playbook ${ansible_verbose} -l $hostpattern $pass_ask_pass ${ansible_root:+-b -K} -e 'workdir="$workdir" $ansibleextravars' $ansibleoptions $p"
         if [ 0 -ne "$force" ] ; then
             echo "Press <Enter> to continue <Ctrl-C> to quit"
@@ -1394,12 +1394,12 @@ case $1 in
         printf " Where to search for reclass:         inventorydir\n"
         printf " Where to put (temp.) results:        workdir\n"
         printf " Local directories to replace:        localdirs\n"
-        printf " Ansible playbooks (in './plays/'):   playbooks\n"
+        printf " Ansible playbooks:                   playbookdir\n"
         printf "\n"
         printf "Currently these contain the following values:\n"
         printf " 'inventorydir':    $inventorydir\n"
         printf " 'workdir':         $workdir\n"
-        printf " 'playbooks':       $playbooks\n"
+        printf " 'playbookdir':       $playbookdir\n"
         printf "\n"
         printf " The above 'localdirs' can be used in reclass like any other\n"
         printf " external variable, i.e. '{{ name }}'. Currently these names\n"
@@ -1437,7 +1437,7 @@ case $1 in
     search-in-playbooks)
         shift
         printf "\e[1;33mSearch string is found in plays:\e[0m\n"
-        $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $playbooks || true
+        $_grep --color -Hn -R -e "{{[a-zA-Z0-9_+ ]*${1}[a-zA-Z0-9_+ ]*}}" $playbookdir || true
     ;;
 #*  search-external variable        show in which file an external
 #*                                  {{ variable }} is configured
