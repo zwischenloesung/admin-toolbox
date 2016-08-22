@@ -469,7 +469,7 @@ reclass_parser='BEGIN {
                 }
                 next
             }
-            /^  storage-dirs:$/ {
+            /^  storage_dirs:$/ {
                 if ( metamode == "parameters" ) {
                   mode="storagedirs"
                 }
@@ -599,7 +599,7 @@ re_define_parsed_variables()
     os_release=""
 #*** String                 parameters.project
     project=""
-#*** Array:                 parameters.storage-dirs
+#*** Array:                 parameters.storage_dirs
     storagedirs=()
 #*** Array:                 parameters.re-merge.direct
     remergedirect=()
