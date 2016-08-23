@@ -1100,6 +1100,9 @@ case $1 in
         else
             error "No class or node was specified.."
         fi
+        for d in ${!localdirs[@]} ; do
+            ansibleextravars="$ansibleextravars $d=${localdirs[$d]}"
+        done
     ;;&
 #*  ansible-fetch src dest [flat]   ansible oversimplified fetch module
 #*                                  wrapper (prefer ansible-play instead)
