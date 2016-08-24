@@ -231,6 +231,14 @@ while true ; do
         -n|--dry-run)
             dryrun=0
         ;;
+#*  --dry-run-rsync                 do all but on rsync just pretend
+        --dry-run-rsync|--rsync-dry-run)
+            rsync_options="$rsync_options -n"
+        ;;
+#*  --dry-run-ansible               do all but on ansible just pretend
+        --dry-run-ansible|--ansible-dry-run)
+            ansibleoptions="$ansibleoptions -C"
+        ;;
 #*  -H |--host host                 only process a certain host
         -H|--host|-N|--node)
             shift
@@ -247,14 +255,6 @@ while true ; do
             shift
             projectfilter="$1"
             classfilter="project.$1"
-        ;;
-#*  -r |--rsync-dry-run
-        -r|--rsync-dry-run)
-            rsync_options="$rsync_options -n"
-        ;;
-#*  -R |--ansible-dry-run
-        -R|--ansible-dry-run)
-            ansibleoptions="$ansibleoptions -C"
         ;;
 #*  -s |--subdir-only-merge         concentrate on this subdir only
         -s|--subdir-only-merge)
