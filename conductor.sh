@@ -178,6 +178,10 @@ done
 #* options:
 while true ; do
     case "$1" in
+#*  --ansible-become-root       Ansible: Use --become-user root -K
+        -S|--ansible-bec*)
+            ansible_root="--become-user root -K"
+        ;;
 #*  -a |--ansible-extra-vars 'vars' variables to pass to ansible
         -a|--ansible-extra-vars)
             shift
@@ -260,10 +264,6 @@ while true ; do
         -s|--subdir-only-merge)
             shift
             merge_only_this_subdir=$1
-        ;;
-#*  -S |--ansible-become-root       Ansible: Use --become-user root -K
-        -S|--ansible-bec*)
-            ansible_root="--become-user root -K"
         ;;
 #*  -v |--verbose
         -v|--verbose)
