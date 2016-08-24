@@ -267,7 +267,11 @@ while true ; do
         ;;
 #*  -v |--verbose
         -v|--verbose)
-            ansible_verbose="-vvv"
+            if [ -z "$ansible_verbose" ] ; then
+                ansible_verbose="-v"
+            else
+                ansible_verbose="-vvv"
+            fi
             rsync_options="$rsync_options -v"
         ;;
 #*  -V |--version
