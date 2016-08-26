@@ -35,6 +35,7 @@ ok_protocols="tls1"
 safe_protocols="tls1_1 tls1_2"
 # cipher suite to use in default tests
 ciphers=''
+save_ciphers='HIGH:!DSS:!aNULL@STRENGTH'
 verbose=0
 
 ### }}}
@@ -137,7 +138,7 @@ while true ; do
 #            dryrun=0
 #        ;;
 #*      -p |--protocols 'list'      a space separated list of protocol options
-#*                                  e.g. 'no_ssl3' (see `man s_client`)
+#*                                  e.g. -no_ssl3 (see 'man s_client')
         -p|--protocols)
             shift
             protocol_prefs="$1"
@@ -210,7 +211,7 @@ try_connect()
 
 list_ciphers()
 {
-    $_openssl ciphers $ciphers | $_sed 's;:; ;g'
+    $_openssl ciphers $1 | $_sed 's;:; ;g'
 }
 
 get_certs()
@@ -256,11 +257,17 @@ case $1 in
 #*      ciphers                     test the cipher suite support on a server
     cip*)
         echo "Testing cipher suite on $host $port:"
-        for c in $(list_ciphers) ; do
+        save_cipher_list=" $(list_ciphers $save_ciphers) "
+        for c in $(list_ciphers $ciphers) ; do
+            if [ "XXX" == "${save_cipher_list/* $c */XXX}" ] ; then
+                marker="\e[1;32m*"
+            else
+                marker="\e[1;31m!"
+            fi
             retval=0
             res=$(try_connect $host $port "-cipher $c") || retval=1
             if [ $retval -eq 0 ] ; then
-                echo -e "\e[0;39m[\e[1;32m*\e[1;39m] $c"
+                echo -e "\e[0;39m[$marker\e[1;39m] $c"
             else
                 if [ $verbose -eq 0 ] ; then
                     res=$( echo -n $res | cut -d':' -f6)
@@ -280,7 +287,7 @@ case $1 in
         ;;
 #*      list-ciphers                list the ciphers available locally
     ls|list*)
-        for c in $(list_ciphers) ; do
+        for c in $(list_ciphers $ciphers) ; do
             echo $c
         done
         ;;
