@@ -32,6 +32,12 @@
 ########################################################################
 [ "$1" == "debug" ] && shift && set -x
 
+##~~ maestro ~~: add a "test" function, to search for variables used
+##               in classes for each reclass repo - one is to be included
+##               in the maestro sources themselves. the test should also
+##               cover the playbooks..
+
+
 ## variables ##
 declare -A localdirs
 ### you may copy the following variables into this file for having your own
