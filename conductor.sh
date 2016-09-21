@@ -61,6 +61,11 @@ inventorydir=""
 playbookdir=""
 ## just a directory where output is stored temporarily and for external usage
 workdir=""
+
+##~~ maestro ~~: we should switch to workdirs whith the current work/temp dir
+##               inside. no global configs anymore, the global might be a
+##               simple pointer/wrapper for one specific workdir..
+
 ## specify all local directories you intend to use in your reclass hosts in this
 ## associative array, now you can reference them by using their {{ key }}
 localdirs=()
@@ -1258,6 +1263,8 @@ case $1 in
 #*                                  to your knowledge base (this is almost
 #*                                  identical to 'clone-link' but does not
 #*                                  produce a local config file).
+##~~ maestro ~~: there should be one init, that creates a local config,
+##               connects all reclass and playbook repos
     init)
         shift
         if [ -n "$1" ] ; then
@@ -1424,6 +1431,7 @@ case $1 in
             printf "  $d: ${localdirs[$d]}\n"
         done
     ;;
+##~~ maestro ~~: search searches everywhere. simple, straightforward
 #*  search variable                 show in which file a variable is configured
     search)
         shift
@@ -1432,6 +1440,7 @@ case $1 in
         printf "\e[1;33mSearch string is found in classes:\e[0m\n"
         $_grep --color -Hn -R -e "^$1:" -e "\s$1:" -e "\${$1}" -e "{{ *$1 *}}" $inventorydir/classes || true
     ;;
+##~~ maestro ~~: remove search-all, there is just too much
 #*  search-all                      show what variables are used
     search-all)
         printf "\e[1;33mSearch string is found in nodes:\e[0m\n"
