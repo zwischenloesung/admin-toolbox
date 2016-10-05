@@ -190,12 +190,12 @@ done
 while true ; do
     case "$1" in
 #*  --ansible-become-root           Ansible: Use --become-user root -K
-        --ansible-become-root)
+        -b|--ansible-become-root)
             ansible_root="--become-user root -K"
         ;;
 #*  --ansible-become-su             Ansible: Use --become-method su \
 #*                                              --become-user root -K
-        --ansible-become-su)
+        -B|--ansible-become-su)
             ansible_root="--become-method su --become-user root -K"
         ;;
 #*  -a |--ansible-extra-vars 'vars' variables to pass to ansible
