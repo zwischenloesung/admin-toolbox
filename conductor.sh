@@ -1269,8 +1269,6 @@ case $1 in
 #*                                  to your knowledge base (this is almost
 #*                                  identical to 'clone-link' but does not
 #*                                  produce a local config file).
-##~~ maestro ~~: there should be one init, that creates a local config,
-##               connects all reclass and playbook repos
     init)
         shift
         if [ -n "$1" ] ; then
