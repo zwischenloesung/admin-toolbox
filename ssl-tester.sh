@@ -237,6 +237,13 @@ print_summary()
             $_awk '/^\s$/ {exit}; {print $0};'
 }
 
+print_validity()
+{
+    get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
+        $_grep -A1 -e "Serial Number:" -e "Not Before:" | \
+        $_sed 's/^ */ /' | $_grep -v -e "--"
+}
+
 print_hostnames()
 {
     get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
@@ -262,7 +269,7 @@ case $1 in
             if [ "XXX" == "${save_cipher_list/* $c */XXX}" ] ; then
                 marker="\e[1;32m*"
             else
-                marker="\e[1;31m!"
+                marker="\e[1;31m@"
             fi
             retval=0
             res=$(try_connect $host $port "-cipher $c") || retval=1
@@ -323,6 +330,10 @@ case $1 in
 #*      print-summary               print an overview of the certificate
     print-sum*|sum)
         print_summary $host $port
+    ;;
+#*      print-validity              print an overview of the certificate
+    print-val*|val)
+        print_validity $host $port
     ;;
 #*      protocols                   test the protocol support on a server
     prot*)
