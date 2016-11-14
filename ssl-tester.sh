@@ -292,6 +292,10 @@ case $1 in
     connect-test|test|try)
         try_connect $host $port
         ;;
+#*      help                        print help
+    help)
+        print_help
+        ;;
 #*      list-ciphers                list the ciphers available locally
     ls|list*)
         for c in $(list_ciphers $ciphers) ; do
