@@ -274,7 +274,7 @@ case $1 in
             retval=0
             res=$(try_connect $host $port "-cipher $c") || retval=1
             if [ $retval -eq 0 ] ; then
-                echo -e "\e[0;39m[$marker\e[1;39m] $c"
+                echo -e "\e[0;39m[$marker\e[0;39m] \e[1m$c"
             else
                 if [ $verbose -eq 0 ] ; then
                     res=$( echo -n $res | cut -d':' -f6)
