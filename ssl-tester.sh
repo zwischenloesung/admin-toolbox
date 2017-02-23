@@ -332,11 +332,11 @@ case $1 in
         done
     ;;
 #*      print-summary               print an overview of the certificate
-    print-sum*|sum)
+    print-sum*|sum*)
         print_summary $host $port
     ;;
 #*      print-validity              print an overview of the certificate
-    print-val*|val)
+    print-val*|val*)
         print_validity $host $port
     ;;
 #*      protocols                   test the protocol support on a server
