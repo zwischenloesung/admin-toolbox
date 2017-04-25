@@ -42,6 +42,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
             ["_mkdir"]="/bin/mkdir"
+            ["_mktemp"]="/bin/mktemp"
             ["_mv"]="/bin/mv"
             ["_pwd"]="/bin/pwd"
             ["_rm"]="/bin/rm"
@@ -50,7 +51,6 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_sed_forced"]="/bin/sed"
             ["_sha256sum"]="/usr/bin/sha256sum"
             ["_tr"]="/usr/bin/tr"
-            ["_tempfile"]="/bin/tempfile"
             ["_wget"]="/usr/bin/wget" )
 # this tools get disabled in dry-run and sudo-ed for needsroot
 danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" )
@@ -169,7 +169,7 @@ done
 
 echo "Trying to get $debian_version from $debian_mirror"
 
-tempdir=$($_tempfile -d)
+tempdir=$($_mktemp -d)
 cd $tempdir
 $_wget "$debian_mirror/$debian_version/Release.gpg"
 $_wget "$debian_mirror/$debian_version/Release"
