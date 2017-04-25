@@ -198,4 +198,6 @@ $_grep "./MANIFEST.udebs$" SHA256SUMS
 $_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
 $_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
 
+$_rm $tempdir/*
+$_rmdir $tempdir
 
