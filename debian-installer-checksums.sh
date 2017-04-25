@@ -48,6 +48,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_rmdir"]="/bin/rmdir"
             ["_sed"]="/bin/sed"
             ["_sed_forced"]="/bin/sed"
+            ["_sha256sum"]="/usr/bin/sha256sum"
             ["_tr"]="/usr/bin/tr"
             ["_tempfile"]="/bin/tempfile"
             ["_wget"]="/usr/bin/wget" )
@@ -166,16 +167,35 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
+echo "Trying to get $debian_version from $debian_mirror"
+
 tempdir=$($_tempfile -d)
 cd $tempdir
-$_wget $debian_mirror/$debian_version/Release.gpg
-$_wget $debian_mirror/$debian_version/Release
+$_wget "$debian_mirror/$debian_version/Release.gpg"
+$_wget "$debian_mirror/$debian_version/Release"
 $_mv Release.gpg Release.sig
 $_gpg -v Release.sig ; retval=$?
-
 if [ $retval -ne 0 ] ; then
     die "The Release file could not be verified with Release.gpg!"
 fi
 
+$_awk 'BEGIN{
+            mode="false"
+        }
+        /^SHA256:/{
+            mode="true"
+        }
+        /main\/installer-amd64\/current\/images\/SHA256SUMS/{
+            if (mode == "true"){
+                print $1" SHA256SUMS"
+        }}' Release > Release.sha256sums
+
+$_wget "$debian_mirror/$debian_version/main/installer-amd64/current/images/SHA256SUMS"
+$_sha256sum -c Release.sha256sums
+
+$_grep "./MANIFEST$" SHA256SUMS
+$_grep "./MANIFEST.udebs$" SHA256SUMS
+$_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
+$_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
 
 
