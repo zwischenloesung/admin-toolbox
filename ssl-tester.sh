@@ -114,7 +114,7 @@ done
 #* options:
 while true ; do
     case "$1" in
-#*      -c |--config conffile       alternative config file
+#*      -c |--config conffile               alternative config file
         -c|--config)
             shift
             if [ -r "$1" ] ; then
@@ -123,44 +123,57 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
-#*      -C |--allciphers            consider all ciphers
-        -C|--allciphers)
+#*      -C |--ciphers [cifer:..]|all|save   consider all ciphers
+        -C|--ciphers)
             shift
-            ciphers='ALL:eNULL'
+            ciphers=$1
+            case "$1" in
+                a*)
+                    ciphers='ALL:eNULL'
+                ;;
+                s*)
+                    ciphers="$save_ciphers"
+                ;;
+                *)
+                    ciphers="$1"
+                ;;
+            esac
         ;;
-#*      -h |--help                  print this help
+#*      -h |--help                          print this help
         -h|--help)
             print_help
             exit 0
         ;;
-##*      -n |--dry-run               do not change anything
+##*      -n |--dry-run                       do not change anything
 #        -n|--dry-run)
 #            dryrun=0
 #        ;;
-#*      -p |--protocols 'list'      a space separated list of protocol options
-#*                                  e.g. -no_ssl3 (see 'man s_client')
+#*      -p |--protocols 'list'              a space separated list of protocol
+#*                                          options  e.g. -no_ssl3 (see
+#*                                          'man s_client')
         -p|--protocols)
             shift
             protocol_prefs="$1"
         ;;
-#*      -P |--safe-protocol         test only protocols considered "safe"
+#*      -P |--safe-protocol                 test only protocols considered
+#*                                          "save"
         -P|--safe*)
             protocol_prefs="$safe_protocols"
         ;;
-#*      -q |--quiet                 contrary of verbose (see config)
+#*      -q |--quiet                         contrary of verbose (see config)
         -q|--quiet)
             verbose=1
         ;;
-#*      -s |--starttls protocol     use starttls (see 'man s_client')
+#*      -s |--starttls protocol             use starttls (see 'man s_client')
         -s|--starttls)
             shift
             starttls="-starttls $1"
         ;;
-#*      -v |--verbose               contrary of quiet (see config)
+#*      -v |--verbose                       contrary of quiet (see config)
         -v|--verbose)
             verbose=0
         ;;
-#*      -V |--version               print the version information
+#*      -V |--version                       print the version information
         -V|--version)
             print_version
             exit
