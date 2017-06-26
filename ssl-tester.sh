@@ -342,7 +342,7 @@ case $1 in
 #*      print-san                   print alternative hostname entries
     print-san|san)
 #        a=$(echo ${holder[0]#*:} | $_sed 's@CN@\\e[0;39mCN@')
-        echo "The following additional hostnames (SAN) are registered:"
+        echo "The following hostnames (SAN) are registered:"
         echo -e -n "\e[0;33m"
         for h in ${info[1]} ; do
             h=${h#*:}
