@@ -323,19 +323,24 @@ case $1 in
     print-certs)
         get_certs $host $port -showcerts
     ;;
-#*      print-hostnames             print all the hostnames protected
-    print-host*|host*)
+    print-host*|host*|print-san|san)
         IFSOLD=$IFS
         IFS="$(echo -ne '\n\b')"
         info=( $(IFS=$IFSOLD; print_hostnames $host $port) )
-        echo "This certificate was issued for:"
         IFS=","
         holder=( $( echo "${info[0]#*:}" ) )
         IFS=$IFSOLD
+    ;;&
+#*      print-hostnames             print all the hostnames protected
+    print-host*|host*)
+        echo "This certificate was issued for:"
         for (( i=0; i<${#holder[@]}; i++ )); do
             echo -e " $(echo ${holder[$i]} | $_sed 's@CN@\\e[1;33mCN@') "\
                     "\e[0;39m"
         done
+    ;&
+#*      print-san                   print alternative hostname entries
+    print-host*|host*|print-san|san)
 #        a=$(echo ${holder[0]#*:} | $_sed 's@CN@\\e[0;39mCN@')
         echo "The following additional hostnames (SAN) are registered:"
         echo -e -n "\e[0;33m"
