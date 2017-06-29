@@ -219,7 +219,7 @@ connect()
 
 try_connect()
 {
-    echo "" | $_openssl s_client $3 $starttls $ssl_protocols -connect $1:$2 2>&1
+    echo "" | $_openssl s_client -servername $1 $3 $starttls $ssl_protocols -connect $1:$2 2>&1
 }
 
 list_ciphers()
