@@ -138,10 +138,6 @@ while true ; do
             print_help
             exit 0
         ;;
-##*      -n |--dry-run                       do not change anything
-#        -n|--dry-run)
-#            dryrun=0
-#        ;;
 #*      -p |--protocols 'list'              a space separated list of protocol
 #*                                          options  e.g. -no_ssl3 (see
 #*                                          'man s_client')
