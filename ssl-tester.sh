@@ -28,7 +28,7 @@ needsroot=1
 # list all available protocols that might be tested
 protocol_list="ssl3 tls1 tls1_1 tls1_2"
 # protocol settings to use in default tests
-protocol_prefs="no_ssl2 no_ssl3 no_tls1"
+protocol_prefs="no_ssl3 no_tls1"
 # considered ok
 ok_protocols="tls1"
 # considered safe
@@ -49,21 +49,15 @@ _pre=""
 declare -A sys_tools
 sys_tools=(
     ["_awk"]="/usr/bin/awk"
-    ["_cat"]="/bin/cat"
-    ["_cp"]="/bin/cp"
     ["_grep"]="/bin/grep"
     ["_id"]="/usr/bin/id"
-    ["_mkdir"]="/bin/mkdir"
     ["_openssl"]="/usr/bin/openssl"
     ["_pwd"]="/bin/pwd"
-    ["_rm"]="/bin/rm"
-    ["_rmdir"]="/bin/rmdir"
     ["_sed"]="/bin/sed"
-    ["_sed_forced"]="/bin/sed"
     ["_tr"]="/usr/bin/tr"
 )
 # this tools get disabled in dry-run and sudo-ed for needsroot
-danger_tools=( "_cp" "_cat" "_dd" "_mkdir" "_sed" "_rm" "_rmdir" )
+danger_tools=( "_sed" )
 # special case sudo (not mandatory)
 _sudo="/usr/bin/sudo"
 
@@ -77,7 +71,7 @@ print_usage()
 print_help()
 {
     print_usage
-    $_grep "^#\* " $0 | $_sed_forced 's;^#\*;;'
+    $_grep "^#\* " $0 | $_sed 's;^#\*;;'
 }
 
 print_version()
@@ -144,10 +138,6 @@ while true ; do
             print_help
             exit 0
         ;;
-##*      -n |--dry-run                       do not change anything
-#        -n|--dry-run)
-#            dryrun=0
-#        ;;
 #*      -p |--protocols 'list'              a space separated list of protocol
 #*                                          options  e.g. -no_ssl3 (see
 #*                                          'man s_client')
@@ -214,12 +204,12 @@ port=${3:-443}
 
 connect()
 {
-    $_openssl s_client $3 $starttls $ssl_protocols -connect $1:$2 2>&1
+    $_openssl s_client $starttls $ssl_protocols -connect $1:$2 2>&1
 }
 
 try_connect()
 {
-    echo "" | $_openssl s_client -servername $1 $3 $starttls $ssl_protocols -connect $1:$2 2>&1
+    echo "" | $_openssl s_client -servername $1 $starttls $ssl_protocols -connect $1:$2 2>&1
 }
 
 list_ciphers()
@@ -229,7 +219,7 @@ list_ciphers()
 
 get_certs()
 {
-    try_connect $1 $2 $3 | \
+    try_connect $1 $2 | \
         $_awk 'BEGIN {printout=1;} \
                 /-----BEGIN CERTIFICATE-----/ {printout=0;} \
                 /-----END CERTIFICATE-----/ {printout=1; print $0} \
@@ -238,7 +228,7 @@ get_certs()
 
 print_summary()
 {
-    get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
+    get_certs $1 $2 | $_openssl x509 -noout -text | \
         $_grep -A1 -e "Version: " -e "Signature Algorithm:" \
                     -e "Not Before:" -e "Subject:" -e "Public-Key:" \
                     -e "X509v3 Subject Key Identifier:" \
@@ -252,14 +242,14 @@ print_summary()
 
 print_validity()
 {
-    get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
+    get_certs $1 $2 | $_openssl x509 -noout -text | \
         $_grep -A1 -e "Serial Number:" -e "Not Before:" | \
         $_sed 's/^ */ /' | $_grep -v -e "--"
 }
 
 print_hostnames()
 {
-    get_certs $1 $2 $3 | $_openssl x509 -noout -text | \
+    get_certs $1 $2 | $_openssl x509 -noout -text | \
         $_grep -e "Subject:" -e "DNS:"
 }
 
