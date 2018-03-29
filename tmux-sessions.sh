@@ -214,12 +214,14 @@ store()
 
         windows=( $($_tmux list-windows -t $session -F '#W') )
 
-        echo "$_tmux new -d -s $session -n ${windows[0]}" \
-                                >> $confdir/$group/${session}.new
+        echo "$_tmux new -d -s $session -n ${windows[0]} " \
+                            "-c ${workpaths[0]}" \
+                                > $confdir/$group/${session}.new
         for (( i=1; i<${#windows[@]}; i++ )) ; do
             echo "$_tmux new-window -t $session -n ${windows[i]}" \
                                  >> $confdir/$group/${session}.new
         done
+        echo "$_tmux attach -t $session" >> $confdir/$group/${session}.new
     done
 }
 
@@ -349,5 +351,7 @@ esac
 
 #* TODO:
 #*  Missing Features:
-#*   * Implement the attach action
+#*   * Implement the separate attach action
+#*   * somehow respect history (at least ssh sessions would be nice)
 #*  Known Bugs:
+#*   * does not check if session exists etc
