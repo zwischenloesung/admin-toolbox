@@ -1,8 +1,7 @@
 #!/bin/bash -e
 ########################################################################
 #** Version: 0.1
-#* This script downloads, verifies and prints the debian installer
-# checksums for the most central files needed to install debian.
+#* This script checks a mirror for files and checksums..
 #
 # note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
@@ -26,7 +25,7 @@ dryrun=1
 needsroot=1
 
 debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
-debian_version="Debian8.9"
+debian_version=""
 
 ### }}}
 
@@ -146,6 +145,9 @@ while true ; do
     shift
 done
 
+#*  actions:
+action=$1
+
 if [ $dryrun -eq 0 ] ; then
     _pre="echo "
 fi
@@ -167,37 +169,48 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-echo "Trying to get $debian_version from $debian_mirror"
+get_checksums() {
 
-tempdir=$($_mktemp -d)
-cd $tempdir
-$_wget "$debian_mirror/$debian_version/Release.gpg"
-$_wget "$debian_mirror/$debian_version/Release"
-$_mv Release.gpg Release.sig
-$_gpg -v Release.sig ; retval=$?
-if [ $retval -ne 0 ] ; then
-    die "The Release file could not be verified with Release.gpg!"
-fi
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get $debian_version from $debian_mirror"
 
-$_awk 'BEGIN{
-            mode="false"
-        }
-        /^SHA256:/{
-            mode="true"
-        }
-        /main\/installer-amd64\/current\/images\/SHA256SUMS/{
-            if (mode == "true"){
-                print $1" SHA256SUMS"
-        }}' Release > Release.sha256sums
+    tempdir=$($_mktemp -d)
+    cd $tempdir
+    $_wget "$debian_mirror/$debian_version/Release.gpg"
+    $_wget "$debian_mirror/$debian_version/Release"
+    $_mv Release.gpg Release.sig
+    $_gpg -v Release.sig ; retval=$?
+    if [ $retval -ne 0 ] ; then
+        die "The Release file could not be verified with Release.gpg!"
+    fi
 
-$_wget "$debian_mirror/$debian_version/main/installer-amd64/current/images/SHA256SUMS"
-$_sha256sum -c Release.sha256sums
+    $_awk 'BEGIN{
+                mode="false"
+            }
+            /^SHA256:/{
+                mode="true"
+            }
+            /main\/installer-amd64\/current\/images\/SHA256SUMS/{
+                if (mode == "true"){
+                    print $1" SHA256SUMS"
+            }}' Release > Release.sha256sums
 
-$_grep "./MANIFEST$" SHA256SUMS
-$_grep "./MANIFEST.udebs$" SHA256SUMS
-$_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
-$_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
+    $_wget "$debian_mirror/$debian_version/main/installer-amd64/current/images/SHA256SUMS"
+    $_sha256sum -c Release.sha256sums
 
-$_rm $tempdir/*
-$_rmdir $tempdir
+    $_grep "./MANIFEST$" SHA256SUMS
+    $_grep "./MANIFEST.udebs$" SHA256SUMS
+    $_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
+    $_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
+
+    $_rm $tempdir/*
+    $_rmdir $tempdir
+}
+
+case $action in
+#*      checksums       Verify the signature and print the checksum for central files.
+    checksums|sum)
+        get_checksums
+    ;;
+esac
 
