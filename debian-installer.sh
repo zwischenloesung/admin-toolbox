@@ -26,6 +26,7 @@ needsroot=1
 
 debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
 debian_version=""
+debian_arch="amd64"
 
 ### }}}
 
@@ -107,6 +108,11 @@ done
 #*  options:
 while true ; do
     case "$1" in
+#*      -a |--arch architecture             provide the target arch (default: 'amd64')
+        -a|--arch)
+            shift
+            debian_arch=$1
+        ;;
 #*      -c |--config conffile               alternative config file
         -c|--config)
             shift
@@ -169,10 +175,21 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
+get_files() {
+
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get the kernel and the initrd for $debian_version/$debian_arch from $debian_mirror installing it here $($_pwd)"
+
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/initrd.gz"
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/linux"
+    $_sha256sum initrd.gz
+    $_sha256sum linux
+}
+
 get_checksums() {
 
     [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
-    echo "Trying to get $debian_version from $debian_mirror"
+    echo "Trying to get the checksums for $debian_version/$debian_arch from $debian_mirror"
 
     tempdir=$($_mktemp -d)
     cd $tempdir
@@ -190,27 +207,37 @@ get_checksums() {
             /^SHA256:/{
                 mode="true"
             }
-            /main\/installer-amd64\/current\/images\/SHA256SUMS/{
+            /main\/installer-'${debian_arch}'\/current\/images\/SHA256SUMS/{
                 if (mode == "true"){
                     print $1" SHA256SUMS"
             }}' Release > Release.sha256sums
 
-    $_wget "$debian_mirror/$debian_version/main/installer-amd64/current/images/SHA256SUMS"
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/SHA256SUMS"
     $_sha256sum -c Release.sha256sums
 
     $_grep "./MANIFEST$" SHA256SUMS
     $_grep "./MANIFEST.udebs$" SHA256SUMS
-    $_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
-    $_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
+    $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
+    $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
 
     $_rm $tempdir/*
     $_rmdir $tempdir
+}
+
+get_versions() {
+    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian.\..." | $_sed 's;.*\(Debian.\...\).*;\1;' | $_sed 's;/;;'
 }
 
 case $action in
 #*      checksums       Verify the signature and print the checksum for central files.
     checksums|sum)
         get_checksums
+    ;;
+    files)
+        get_files
+    ;;
+    versions)
+        get_versions
     ;;
 esac
 
