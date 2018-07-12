@@ -175,17 +175,6 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-get_files() {
-
-    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
-    echo "Trying to get the kernel and the initrd for $debian_version/$debian_arch from $debian_mirror installing it here $($_pwd)"
-
-    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/initrd.gz"
-    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/linux"
-    $_sha256sum initrd.gz
-    $_sha256sum linux
-}
-
 get_checksums() {
 
     [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
@@ -215,18 +204,41 @@ get_checksums() {
     $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/SHA256SUMS"
     $_sha256sum -c Release.sha256sums
 
-    $_grep "./MANIFEST$" SHA256SUMS
-    $_grep "./MANIFEST.udebs$" SHA256SUMS
-    $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
-    $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
+    if [ "$1" == "persist" ] ; then
+
+        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
+    else
+
+        $_grep "./MANIFEST$" SHA256SUMS
+        $_grep "./MANIFEST.udebs$" SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
+    fi
 
     $_rm $tempdir/*
     $_rmdir $tempdir
 }
 
+get_files() {
+
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get the kernel and the initrd for $debian_version/$debian_arch from $debian_mirror installing it here $cwd"
+
+    get_checksums persist
+    cd $cwd
+
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/initrd.gz"
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/linux"
+
+    $_sha256sum -c SHA256SUMS
+}
+
 get_versions() {
     $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian.\..." | $_sed 's;.*\(Debian.\...\).*;\1;' | $_sed 's;/;;'
 }
+
+cwd=$($_pwd)
 
 case $action in
 #*      checksums       Verify the signature and print the checksum for central files.
