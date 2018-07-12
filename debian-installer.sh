@@ -25,7 +25,7 @@ dryrun=1
 needsroot=1
 
 debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
-debian_version=""
+debian_version="stable"
 debian_arch="amd64"
 
 ### }}}
@@ -136,7 +136,7 @@ while true ; do
             print_version
             exit
         ;;
-#*      -V |--debian-version version        version to search for on the mirror
+#*      -V |--debian-version version        version to search for (default: 'stable')
         -V|--debian-version)
             shift
             debian_version=$1
