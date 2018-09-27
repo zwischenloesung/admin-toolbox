@@ -245,11 +245,17 @@ case $action in
     checksums|sum)
         get_checksums
     ;;
+#*      files           Get the files needed for a minimal installation.
     files)
         get_files
     ;;
+#*      versions        Show what versions are available on the mirror.
     versions)
         get_versions
+    ;;
+    *)
+        echo "action not supported."
+        print_help
     ;;
 esac
 
