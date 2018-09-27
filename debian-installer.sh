@@ -1,8 +1,7 @@
 #!/bin/bash -e
 ########################################################################
 #** Version: 0.1
-#* This script downloads, verifies and prints the debian installer
-# checksums for the most central files needed to install debian.
+#* This script checks a mirror for files and checksums..
 #
 # note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
@@ -26,7 +25,8 @@ dryrun=1
 needsroot=1
 
 debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
-debian_version="Debian8.9"
+debian_version="stable"
+debian_arch="amd64"
 
 ### }}}
 
@@ -108,6 +108,11 @@ done
 #*  options:
 while true ; do
     case "$1" in
+#*      -a |--arch architecture             provide the target arch (default: 'amd64')
+        -a|--arch)
+            shift
+            debian_arch=$1
+        ;;
 #*      -c |--config conffile               alternative config file
         -c|--config)
             shift
@@ -131,7 +136,7 @@ while true ; do
             print_version
             exit
         ;;
-#*      -V |--debian-version version        version to search for on the mirror
+#*      -V |--debian-version version        version to search for (default: 'stable')
         -V|--debian-version)
             shift
             debian_version=$1
@@ -145,6 +150,9 @@ while true ; do
     esac
     shift
 done
+
+#*  actions:
+action=$1
 
 if [ $dryrun -eq 0 ] ; then
     _pre="echo "
@@ -167,37 +175,87 @@ for t in ${danger_tools[@]} ; do
     export ${t}="$_pre ${sys_tools[$t]}"
 done
 
-echo "Trying to get $debian_version from $debian_mirror"
+get_checksums() {
 
-tempdir=$($_mktemp -d)
-cd $tempdir
-$_wget "$debian_mirror/$debian_version/Release.gpg"
-$_wget "$debian_mirror/$debian_version/Release"
-$_mv Release.gpg Release.sig
-$_gpg -v Release.sig ; retval=$?
-if [ $retval -ne 0 ] ; then
-    die "The Release file could not be verified with Release.gpg!"
-fi
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get the checksums for $debian_version/$debian_arch from $debian_mirror"
 
-$_awk 'BEGIN{
-            mode="false"
-        }
-        /^SHA256:/{
-            mode="true"
-        }
-        /main\/installer-amd64\/current\/images\/SHA256SUMS/{
-            if (mode == "true"){
-                print $1" SHA256SUMS"
-        }}' Release > Release.sha256sums
+    tempdir=$($_mktemp -d)
+    cd $tempdir
+    $_wget "$debian_mirror/$debian_version/Release.gpg"
+    $_wget "$debian_mirror/$debian_version/Release"
+    $_mv Release.gpg Release.sig
+    $_gpg -v Release.sig ; retval=$?
+    if [ $retval -ne 0 ] ; then
+        die "The Release file could not be verified with Release.gpg!"
+    fi
 
-$_wget "$debian_mirror/$debian_version/main/installer-amd64/current/images/SHA256SUMS"
-$_sha256sum -c Release.sha256sums
+    $_awk 'BEGIN{
+                mode="false"
+            }
+            /^SHA256:/{
+                mode="true"
+            }
+            /main\/installer-'${debian_arch}'\/current\/images\/SHA256SUMS/{
+                if (mode == "true"){
+                    print $1" SHA256SUMS"
+            }}' Release > Release.sha256sums
 
-$_grep "./MANIFEST$" SHA256SUMS
-$_grep "./MANIFEST.udebs$" SHA256SUMS
-$_grep "./netboot/debian-installer/amd64/initrd.gz$" SHA256SUMS
-$_grep "./netboot/debian-installer/amd64/linux$" SHA256SUMS
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/SHA256SUMS"
+    $_sha256sum -c Release.sha256sums
 
-$_rm $tempdir/*
-$_rmdir $tempdir
+    if [ "$1" == "persist" ] ; then
+
+        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
+    else
+
+        $_grep "./MANIFEST$" SHA256SUMS
+        $_grep "./MANIFEST.udebs$" SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
+    fi
+
+    $_rm $tempdir/*
+    $_rmdir $tempdir
+}
+
+get_files() {
+
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get the kernel and the initrd for $debian_version/$debian_arch from $debian_mirror installing it here $cwd"
+
+    get_checksums persist
+    cd $cwd
+
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/initrd.gz"
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/debian-installer/${debian_arch}/linux"
+
+    $_sha256sum -c SHA256SUMS
+}
+
+get_versions() {
+    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian.\..." | $_sed 's;.*\(Debian.\...\).*;\1;' | $_sed 's;/;;'
+}
+
+cwd=$($_pwd)
+
+case $action in
+#*      checksums       Verify the signature and print the checksum for central files.
+    checksums|sum)
+        get_checksums
+    ;;
+#*      files           Get the files needed for a minimal installation.
+    files)
+        get_files
+    ;;
+#*      versions        Show what versions are available on the mirror.
+    versions)
+        get_versions
+    ;;
+    *)
+        echo "action not supported."
+        print_help
+    ;;
+esac
 
