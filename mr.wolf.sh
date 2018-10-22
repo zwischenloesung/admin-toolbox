@@ -237,13 +237,13 @@ if [ $dryrun -eq 0 ] ; then
         $_find $target_dir -type d -empty $older_than
     fi
 else
-    echo "Removing this files"
+    echo "Removing files"
     # always consider the pattern as find would
     set -f
     $_find $target_dir $file_type $older_than $file_pattern -delete
     set +f
     if [ $remove_empty -eq 0 ] ; then
-        echo "Removing this directories - try run"
+        echo "Removing empty parent directories"
         $_find $target_dir -type d -empty $older_than -delete
     fi
 fi
