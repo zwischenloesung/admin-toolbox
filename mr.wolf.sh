@@ -135,7 +135,7 @@ while true ; do
         -o|--find-older)
             shift
             if [ -f "$1" ] ; then
-                older_than="! -newer $1"
+                older_than="! -newer $1 ! -name ${1##*/}"
             else
                 error "Could not find regular timestamp file $1"
             fi
