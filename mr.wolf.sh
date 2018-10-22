@@ -1,7 +1,8 @@
 #!/bin/bash -e
 ########################################################################
 #** Version: 1.0
-#* This script helps keeping a target directory clean.
+#* This script helps keeping a target directory clean. E.g. by cron:
+#* `mr.wolf.sh -a "last week" -f data.json -e /tmp"
 #
 # note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
@@ -28,7 +29,9 @@ target_dir=""
 file_pattern=""
 file_type=""
 older_than=""
+older_than_date=""
 remove_empty=1
+timestamp=".timestamp"
 
 ### }}}
 
@@ -38,6 +41,7 @@ _pre=""
 # The system tools we gladly use. Thank you!
 declare -A sys_tools
 sys_tools=( ["_cat"]="/bin/cat"
+            ["_date"]="/bin/date"
             ["_find"]="/usr/bin/find"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
@@ -121,10 +125,10 @@ while true ; do
 #*                                          (see `date -d ..`)
         -a|--find-file-age)
             shift
-            if $_touch "$1" ; then
-                older_than="! -newer $1"
+            if $_date -d "$1" ; then
+                older_than_date="$1"
             else
-                error "Could not create the timestamp file $1"
+                error "Could not create the timestamp $1"
             fi
         ;;
 #*      -o |--find-older timestampfile      only consider files older than this
@@ -208,16 +212,36 @@ done
 
 [ ! -d "$target_dir" ] && error "No target directory provided.."
 
+if [ -n "$older_than_date" ] ; then
+    if [ -z "${timestamp%%*/}" ] ; then
+        error "The temp file '$timestamp' must be at a valid location"
+    fi
+    if [ -n "${timestamp##/*}" ] ; then
+        timestamp="$target_dir/$timestamp"
+    fi
+    if $_touch -d "$older_than_date" "$timestamp" ; then
+        older_than="! -newer $timestamp ! -name ${timestamp##*/}"
+    else
+        error "Failed to create the temp file '$timestamp'"
+    fi
+fi
+
 if [ $dryrun -eq 0 ] ; then
     echo "Not removing this files - try run"
+    # always consider the pattern as find would
+    set -f
     $_find $target_dir $file_type $older_than $file_pattern
+    set +f
     if [ $remove_empty -eq 0 ] ; then
         echo "Not removing this directories - try run"
-        $_find $target_dir -type -empty d $older_than
+        $_find $target_dir -type d -empty $older_than
     fi
 else
-    echo "Removing this files - try run"
+    echo "Removing this files"
+    # always consider the pattern as find would
+    set -f
     $_find $target_dir $file_type $older_than $file_pattern -delete
+    set +f
     if [ $remove_empty -eq 0 ] ; then
         echo "Removing this directories - try run"
         $_find $target_dir -type d -empty $older_than -delete
