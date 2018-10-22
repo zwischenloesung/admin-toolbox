@@ -2,7 +2,7 @@
 ########################################################################
 #** Version: 1.0
 #* This script helps keeping a target directory clean. E.g. by cron:
-#* `mr.wolf.sh -a "last week" -f data.json -e /tmp"
+#* `41 3 * * * [ -x /usr/local/bin/mr.wolf.sh ] && /usr/local/bin/mr.wolf.sh -a "last week" -f data.json -e /tmp"
 #
 # note: the frame for this script was auto-created with
 # *https://github.com/inofix/admin-toolbox/blob/master/makebashscript.sh*
@@ -125,7 +125,7 @@ while true ; do
 #*                                          (see `date -d ..`)
         -a|--find-file-age)
             shift
-            if $_date -d "$1" ; then
+            if $_date -d "$1" 2>&1 > /dev/null ; then
                 older_than_date="$1"
             else
                 error "Could not create the timestamp $1"
@@ -237,13 +237,11 @@ if [ $dryrun -eq 0 ] ; then
         $_find $target_dir -type d -empty $older_than
     fi
 else
-    echo "Removing files"
     # always consider the pattern as find would
     set -f
     $_find $target_dir $file_type $older_than $file_pattern -delete
     set +f
     if [ $remove_empty -eq 0 ] ; then
-        echo "Removing empty parent directories"
         $_find $target_dir -type d -empty $older_than -delete
     fi
 fi
