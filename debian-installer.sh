@@ -235,7 +235,7 @@ get_files() {
 }
 
 get_versions() {
-    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian.\..." | $_sed 's;.*\(Debian.\...\).*;\1;' | $_sed 's;/;;'
+    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian[0-9]\+\.[0-9]\+" | $_sed 's;.*\(Debian[0-9]\+\.[0-9]\+\).*;\1;' | $_sed 's;/;;'
 }
 
 cwd=$($_pwd)
