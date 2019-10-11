@@ -185,7 +185,9 @@ get_checksums() {
     $_wget "$debian_mirror/$debian_version/Release.gpg"
     $_wget "$debian_mirror/$debian_version/Release"
     $_mv Release.gpg Release.sig
+    set +e
     $_gpg -v Release.sig ; retval=$?
+    set -e
     if [ $retval -ne 0 ] ; then
         die "The Release file could not be verified with Release.gpg!"
     fi
