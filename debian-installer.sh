@@ -21,7 +21,13 @@
 
 ### {{{
 
+# do not change anything (=0)
 dryrun=1
+
+# do not ignore gpg errors (=1)
+do_force=1
+
+# no need to be `root` here.. (=1)
 needsroot=1
 
 debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
@@ -122,6 +128,10 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
+#*      -f |--force                         do not care about GPG errors..
+        -f|--force)
+            do_force=0
+        ;;
 #*      -h |--help                          print this help
         -h|--help)
             print_help
@@ -188,8 +198,10 @@ get_checksums() {
     set +e
     $_gpg -v Release.sig ; retval=$?
     set -e
-    if [ $retval -ne 0 ] ; then
-        die "The Release file could not be verified with Release.gpg!"
+    if [ $do_force -ne 0 ] ; then
+        if [ $retval -ne 0 ] ; then
+            die "The Release file could not be verified with Release.gpg!"
+        fi
     fi
 
     $_awk 'BEGIN{
