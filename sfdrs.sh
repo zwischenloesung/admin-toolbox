@@ -1,6 +1,9 @@
 #!/bin/bash -e
 ########################################################################
-#* This script helps ..?
+#* This script helps you to stay informed while working - at least
+#* if your swiss and used to a certain level of noice while working...
+#* Basically it is a wrapper to watch SF DRS 10vor10 and Rundschau
+#* Podcasts from the command line with the help of mplayer.
 #
 ########################################################################
 # author/copyright: <michael.lustenberger@inofix.ch>
