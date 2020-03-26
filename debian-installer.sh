@@ -265,9 +265,17 @@ get_versions() {
     $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian[0-9]\+\.[0-9]\+" | $_sed 's;.*\(Debian[0-9]\+\.[0-9]\+\).*;\1;' | $_sed 's;/;;'
 }
 
+get_architectures() {
+    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists/${debian_version}/main/ 2>/dev/null | $_grep "installer-" | $_sed 's;.*installer-\([a-z]*[0-9]*\).*;\1;' | $_sed 's;/;;'
+}
+
 cwd=$($_pwd)
 
 case $action in
+#*      architectures   Show what architectures are available on the mirror.
+    arch*)
+        get_architectures
+    ;;
 #*      checksums       Verify the signature and print the checksum for central files.
     checksums|sum)
         get_checksums
@@ -277,7 +285,7 @@ case $action in
         get_files
     ;;
 #*      versions        Show what versions are available on the mirror.
-    versions)
+    ver*)
         get_versions
     ;;
     *)
