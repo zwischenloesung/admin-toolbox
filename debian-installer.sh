@@ -47,6 +47,7 @@ sys_tools=( ["_awk"]="/usr/bin/awk"
             ["_gpg"]="/usr/bin/gpg"
             ["_grep"]="/bin/grep"
             ["_id"]="/usr/bin/id"
+            ["_ls"]="/bin/ls"
             ["_mkdir"]="/bin/mkdir"
             ["_mktemp"]="/bin/mktemp"
             ["_mv"]="/bin/mv"
@@ -67,7 +68,7 @@ _sudo="/usr/bin/sudo"
 
 print_usage()
 {
-    echo "usage: $0"
+    printf "\e[1;39musage: $0 [options] action\e[0;39m\n"
 }
 
 print_help()
@@ -78,20 +79,27 @@ print_help()
 
 print_version()
 {
-    $_grep "^#\*\* " $0 | $_sed 's;^#\*\*;;'
+    printf "\e[1;39m"
+    $_grep "^#\*\* " $0 | $_sed 's;^#\*\* ;;'
+    printf "\e[0;39m"
 }
 
-die()
+warn()
 {
-    echo "$@"
-    exit 1
+    printf "\e[1;33mWarning: $@\e[0;39m\n"
 }
 
 error()
 {
-    print_usage
-    echo ""
-    die "Error: $@"
+    printf "\e[1;31mError: $@\e[0;39m\n"
+    exit 1
+}
+
+error_help()
+{
+    printf "\e[1;31mError: $@\e[0;39m\n"
+    print_help
+    exit 1
 }
 
 ## logic ##
@@ -125,7 +133,7 @@ while true ; do
             if [ -r "$1" ] ; then
                 . $1
             else
-                die " config file $1 does not exist."
+                error "config file '$1' does not exist."
             fi
         ;;
 #*      -f |--force                         do not care about GPG errors..
@@ -152,7 +160,7 @@ while true ; do
             debian_version=$1
         ;;
         -*|--*)
-            error "option $1 not supported"
+            error_help "option '$1' not supported."
         ;;
         *)
             break
@@ -200,7 +208,11 @@ get_checksums() {
     set -e
     if [ $do_force -ne 0 ] ; then
         if [ $retval -ne 0 ] ; then
-            die "The Release file could not be verified with Release.gpg!"
+            error "The Release file could not be verified with Release.gpg! (use '--force' to ignore)"
+        fi
+    else
+        if [ $retval -ne 0 ] ; then
+            warn "The Release file could not be verified with Release.gpg!"
         fi
     fi
 
@@ -220,8 +232,9 @@ get_checksums() {
 
     if [ "$1" == "persist" ] ; then
 
-        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
-        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
+        $_ls
+#        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
+#        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
     else
 
         $_grep "./MANIFEST$" SHA256SUMS
@@ -268,8 +281,7 @@ case $action in
         get_versions
     ;;
     *)
-        echo "action not supported."
-        print_help
+        error_help "action not supported."
     ;;
 esac
 
