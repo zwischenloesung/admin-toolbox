@@ -35,7 +35,7 @@ ok_protocols="tls1"
 safe_protocols="tls1_1 tls1_2"
 # cipher suite to use in default tests
 ciphers=''
-save_ciphers='HIGH:!DSS:!aNULL@STRENGTH'
+safe_ciphers='HIGH:!DSS:!aNULL@STRENGTH'
 verbose=0
 
 ### }}}
@@ -117,7 +117,7 @@ while true ; do
                 die " config file $1 does not exist."
             fi
         ;;
-#*      -C |--ciphers [cifer:..]|all|save   consider all ciphers
+#*      -C |--ciphers [cifer:..]|all|safe   consider all ciphers
         -C|--ciphers)
             shift
             ciphers=$1
@@ -126,7 +126,7 @@ while true ; do
                     ciphers='ALL:eNULL'
                 ;;
                 s*)
-                    ciphers="$save_ciphers"
+                    ciphers="$safe_ciphers"
                 ;;
                 *)
                     ciphers="$1"
@@ -146,7 +146,7 @@ while true ; do
             protocol_prefs="$1"
         ;;
 #*      -P |--safe-protocol                 test only protocols considered
-#*                                          "save"
+#*                                          "safe"
         -P|--safe*)
             protocol_prefs="$safe_protocols"
         ;;
@@ -267,9 +267,9 @@ case $1 in
 #*      ciphers                     test the cipher suite support on a server
     cip*)
         echo "Testing cipher suite on $host $port:"
-        save_cipher_list=" $(list_ciphers $save_ciphers) "
+        safe_cipher_list=" $(list_ciphers $safe_ciphers) "
         for c in $(list_ciphers $ciphers) ; do
-            if [ "XXX" == "${save_cipher_list/* $c */XXX}" ] ; then
+            if [ "XXX" == "${safe_cipher_list/* $c */XXX}" ] ; then
                 marker="\e[1;32m*"
             else
                 marker="\e[1;31m@"
