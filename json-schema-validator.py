@@ -1,18 +1,39 @@
 #!/usr/bin/env python3
 
 import json
-from jsonschema import Draft4Validator as Validator
+import yaml
+from jsonschema import Draft7Validator as Validator
 import os
 import sys
 
+def load_data(filename):
+    try:
+        print("Trying JSON")
+        with open(filename, "r") as fh:
+            data = json.loads(fh.read())
+#            print(data)
+            return data
+    except json.decoder.JSONDecodeError:
+        try:
+            print("Trying YAML")
+            with open(filename, "r") as fh:
+                data = yaml.load(fh.read())
+#                print(data)
+                return data
+        except yaml.scanner.ScannerError as e:
+            print(e)
+            sys.exit("The input is not JSON (/YAML)")
+        except Exception as e:
+            print(e)
+    except Exception as e:
+        print(e)
+        print("Could not read the imput file.")
+
 def test_json_schema(json_file, schema_file, meta_schema_file=""):
-    with open(json_file, "r") as fh:
-        json_data = json.loads(fh.read())
-    with open(schema_file, "r") as fh:
-        schema_data = json.loads(fh.read())
+    json_data = load_data(json_file)
+    schema_data = load_data(schema_file)
     if meta_schema_file:
-        with open(meta_schema_file, "r") as fh:
-            meta_schema_data = json.loads(fh.read())
+        meta_schema_data = load_data(meta_schema_file)
         Validator(meta_schema_data).validate(schema_data)
         print("passed meta schema")
     Validator(schema_data).validate(json_data)
@@ -22,7 +43,7 @@ if __name__ == '__main__':
 
     try:
         if len(sys.argv) <= 2:
-            print("This tool validates json against a schema hierarchy.")
+            print("This tool validates json/yaml against a schema hierarchy.")
             sys.exit("Usage: json-schema-validator.py json schema [meta-schema]")
         elif len(sys.argv) == 3:
             test_json_schema(sys.argv[1], sys.argv[2])
@@ -34,5 +55,4 @@ if __name__ == '__main__':
     except Exception as e:
         print("Failed!")
         print(e)
-
 
