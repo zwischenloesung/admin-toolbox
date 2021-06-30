@@ -145,6 +145,11 @@ while true ; do
             print_help
             exit 0
         ;;
+#*      -m |--mirror mirror                 set an alternative mirror
+        -m|--mirror)
+            shift
+            debian_mirror="$1"
+        ;;
 #*      -n |--dry-run                       do not change anything
         -n|--dry-run)
             dryrun=0
@@ -262,11 +267,11 @@ get_files() {
 }
 
 get_versions() {
-    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists// 2>/dev/null | $_grep "Debian[0-9]\+\.[0-9]\+" | $_sed 's;.*\(Debian[0-9]\+\.[0-9]\+\).*;\1;' | $_sed 's;/;;'
+    $_wget -O - $debian_mirror 2>/dev/null | $_grep "Debian[0-9]\+\.[0-9]\+" | $_sed 's;.*\(Debian[0-9]\+\.[0-9]\+\).*;\1;' | $_sed 's;/;;'
 }
 
 get_architectures() {
-    $_wget -O - http://ftp.uni-stuttgart.de/debian/dists/${debian_version}/main/ 2>/dev/null | $_grep "installer-" | $_sed 's;.*installer-\([a-z]*[0-9]*\).*;\1;' | $_sed 's;/;;'
+    $_wget -O - ${debian_mirror}/${debian_version}/main/ 2>/dev/null | $_grep "installer-" | $_sed 's;.*installer-\([a-z]*[0-9]*\).*;\1;' | $_sed 's;/;;'
 }
 
 cwd=$($_pwd)
@@ -283,6 +288,10 @@ case $action in
 #*      files           Get the files needed for a minimal installation.
     files)
         get_files
+    ;;
+#*      show_mirror     Display the configured mirror.
+    show_mirror|mirror)
+        echo $debian_mirror
     ;;
 #*      versions        Show what versions are available on the mirror.
     ver*)
