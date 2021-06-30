@@ -30,7 +30,7 @@ do_force=1
 # no need to be `root` here.. (=1)
 needsroot=1
 
-debian_mirror="http://ftp.uni-stuttgart.de/debian/dists/"
+debian_mirror="https://ftp.uni-stuttgart.de/debian/dists/"
 debian_version="stable"
 debian_arch="amd64"
 
