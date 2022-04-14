@@ -36,6 +36,9 @@ debian_arch="amd64"
 
 ### }}}
 
+# clean up temporary working dir
+keep_tmp_dir=1
+
 # Unsetting this helper variable
 _pre=""
 
@@ -154,6 +157,10 @@ while true ; do
         -n|--dry-run)
             dryrun=0
         ;;
+#*      -T |--keep-tmp-dir                  do not clean up temporary working dir
+        -T|--keep-tmp-dir)
+            keep_tmp_dir=0
+        ;;
 #*      -v |--version
         -v|--version)
             print_version
@@ -213,6 +220,7 @@ get_checksums() {
     set -e
     if [ $do_force -ne 0 ] ; then
         if [ $retval -ne 0 ] ; then
+            clean_tmp $tempdir
             error "The Release file could not be verified with Release.gpg! (use '--force' to ignore)"
         fi
     else
@@ -237,9 +245,8 @@ get_checksums() {
 
     if [ "$1" == "persist" ] ; then
 
-        $_ls
-#        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
-#        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
+        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
     else
 
         $_grep "./MANIFEST$" SHA256SUMS
@@ -248,8 +255,21 @@ get_checksums() {
         $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
     fi
 
-    $_rm $tempdir/*
-    $_rmdir $tempdir
+    clean_tmp $tempdir
+}
+
+clean_tmp() {
+    if [ -d "$1" ] ; then
+        t=$1
+    else
+        error "Error: $1 is not a temporary working directory"
+    fi
+    if [ $keep_tmp_dir -eq 0 ] ; then
+        warn "The temporary working dir is not going to be cleaned up, please do so manually: $tempdir"
+    else
+        $_rm $t/*
+        $_rmdir $t
+    fi
 }
 
 get_files() {
