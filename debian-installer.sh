@@ -25,7 +25,10 @@
 dryrun=1
 
 # do not ignore gpg errors (=1)
-do_force=1
+do_force_gpg=1
+
+# do not stop and ask overwriting local files
+do_force_overwrite=1
 
 # no need to be `root` here.. (=1)
 needsroot=1
@@ -139,9 +142,13 @@ while true ; do
                 error "config file '$1' does not exist."
             fi
         ;;
-#*      -f |--force                         do not care about GPG errors..
-        -f|--force)
-            do_force=0
+#*      -f |--force-gpg                     do not care about GPG errors..
+        -f|--force-gpg)
+            do_force_gpg=0
+        ;;
+#*      -F|--force-overwrite                do not care to overwrite files locally (e.g. SHA256SUM)
+        -F|--force-overwrite)
+            do_force_overwrite=0
         ;;
 #*      -h |--help                          print this help
         -h|--help)
@@ -243,17 +250,28 @@ get_checksums() {
     $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/SHA256SUMS"
     $_sha256sum -c Release.sha256sums
 
-    if [ "$1" == "persist" ] ; then
-
-        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\).*;  ./\1;' > $cwd/SHA256SUMS
-        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
-    else
-
-        $_grep "./MANIFEST$" SHA256SUMS
-        $_grep "./MANIFEST.udebs$" SHA256SUMS
-        $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
-        $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
-    fi
+    case "$1" in
+        persist*)
+            if [ $do_force_overwrite -ne 0 ] && [ -e $cwd/SHA256SUMS ] ; then
+                warn "There already is a file called '$cwd/SHA256SUMS'."
+                echo "To save it please rename it prior to go on by hitting <Enter>."
+                read
+            fi
+        ;;&
+        persist)
+            $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS | $_sed 's;  .*/\(initrd.gz\);  ./\1;' > $cwd/SHA256SUMS
+            $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS | $_sed 's;  .*/\(linux\).*;  ./\1;' >> $cwd/SHA256SUMS
+        ;;
+        persist_iso)
+            $_grep "./netboot/mini.iso$" SHA256SUMS | $_sed 's;  .*/\(mini.iso\);  ./\1;' > $cwd/SHA256SUMS
+        ;;
+        *)
+            $_grep "./MANIFEST$" SHA256SUMS
+            $_grep "./MANIFEST.udebs$" SHA256SUMS
+            $_grep "./netboot/debian-installer/${debian_arch}/initrd.gz$" SHA256SUMS
+            $_grep "./netboot/debian-installer/${debian_arch}/linux$" SHA256SUMS
+        ;;
+    esac
 
     clean_tmp $tempdir
 }
@@ -286,6 +304,18 @@ get_files() {
     $_sha256sum -c SHA256SUMS
 }
 
+get_iso() {
+
+    [ -z "$debian_version" ] && error "There was no Debian version provided. See action: 'versions'"
+    echo "Trying to get the kernel and the initrd for $debian_version/$debian_arch from $debian_mirror installing it here $cwd"
+
+    get_checksums persist_iso
+    cd $cwd
+
+    $_wget "$debian_mirror/$debian_version/main/installer-${debian_arch}/current/images/netboot/mini.iso"
+    $_sha256sum -c SHA256SUMS
+}
+
 get_versions() {
     $_wget -O - $debian_mirror 2>/dev/null | $_grep "Debian[0-9]\+\.[0-9]\+" | $_sed 's;.*\(Debian[0-9]\+\.[0-9]\+\).*;\1;' | $_sed 's;/;;'
 }
@@ -308,6 +338,10 @@ case $action in
 #*      files           Get the files needed for a minimal installation.
     files)
         get_files
+    ;;
+#*      mini.iso        Get the whole netboot mini.iso just like that...
+    iso|mini*)
+        get_iso
     ;;
 #*      show_mirror     Display the configured mirror.
     show_mirror|mirror)
