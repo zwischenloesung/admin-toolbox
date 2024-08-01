@@ -26,13 +26,13 @@
 dryrun=1
 needsroot=1
 # list all available protocols that might be tested
-protocol_list="ssl3 tls1 tls1_1 tls1_2"
+protocol_list="ssl3 tls1 tls1_1 tls1_2 tls1_3"
 # protocol settings to use in default tests
 protocol_prefs="no_ssl3 no_tls1"
 # considered ok
 ok_protocols="tls1"
 # considered safe
-safe_protocols="tls1_1 tls1_2"
+safe_protocols="tls1_2 tls1_3"
 # cipher suite to use in default tests
 ciphers=''
 safe_ciphers='HIGH:!DSS:!aNULL@STRENGTH'
