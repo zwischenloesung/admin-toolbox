@@ -143,7 +143,7 @@ else
     echo "wele wotsch? oder eifach nuet"
     read answer
     if [ -n "$answer" ] ; then
-        $_mplayer --zoom --framedrop ${channels[answer]}
+        $_mplayer -zoom -framedrop ${channels[answer]}
     fi
 fi
 
