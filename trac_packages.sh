@@ -59,15 +59,25 @@ print_version()
     grep "^#\*\* " $0 | sed 's;^#\*\*;;'
 }
 
+found_something=0
 print_package_log()
 {
     text="$1"
     pattern="$2"
     day="$3"
     echo "$t$t$t$t$t$t $text $t$t$t$t$t$t" | tee -a $tmpfile
-    grep $day ${logfile[@]} | \
-        grep "$pattern " | \
-        awk '{ print " * '"$b"'"$4"'"$b"': "$5" -> "$6"" }' | tee -a $tmpfile
+    if [ "$autosuffix" == ".md" ] ; then
+        grep $day ${logfile[@]} | grep "$pattern " | \
+            awk '{ print " * '"$b"'"$4"'"$b"': "$5" -> "$6"" }' | \
+            sed -e 's|<|\&lt;|g' -e 's|>|\&gt;|g' | tee -a $tmpfile | grep ".*"
+        retval=$?
+    else
+        grep $day ${logfile[@]} | grep "$pattern " | \
+            awk '{ print " * '"$b"'"$4"'"$b"': "$5" -> "$6"" }' | \
+            tee -a $tmpfile
+        retval=$?
+    fi
+    let found_something+=1
     echo "" | tee -a $tmpfile
 }
 
@@ -190,6 +200,10 @@ for p in ${target_pattern[@]} ; do
 done
 
 if [ -n "$outfile" ] ; then
-    cp $tmpfile $outfile
+    if [ $found_something > 0 ] ; then
+        cp $tmpfile $outfile
+    else
+        echo "no package changes found"
+    fi
     rm $tmpfile
 fi
