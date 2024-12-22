@@ -2,7 +2,7 @@
 ########################################################################
 #** Version: 2.1
 #* Very basic script to track todays debian package installations
-#* and print it in a trac-wiki compatible form..
+#* and print it in a trac-wiki compatible form (or markdown)..
 ########################################################################
 # author/copyright: <mic@inofix.ch>
 # license: gladly sharing with the universe and any lifeform,
@@ -37,6 +37,11 @@ up=`uptime -p`
 tmpfile=""
 
 autofilename=""
+autosuffix=".txt"
+
+# title format
+t="="
+b="'''"
 
 print_usage()
 {
@@ -59,10 +64,10 @@ print_package_log()
     text="$1"
     pattern="$2"
     day="$3"
-    echo "====== $text ======" | tee -a $tmpfile
+    echo "$t$t$t$t$t$t $text $t$t$t$t$t$t" | tee -a $tmpfile
     grep $day ${logfile[@]} | \
         grep "$pattern " | \
-        awk '{ print " * '"'''"'"$4"'"'''"': "$5" -> "$6"" }' | tee -a $tmpfile
+        awk '{ print " * '"$b"'"$4"'"$b"': "$5" -> "$6"" }' | tee -a $tmpfile
     echo "" | tee -a $tmpfile
 }
 
@@ -96,17 +101,11 @@ while true ; do
             print_help
             exit 0
         ;;
-#*      -s |--search pattern        search for 'remove', 'install' or 'update'
-        -s|--search)
-            shift
-            case "$1" in
-                remove|install|update)
-                    target_pattern=( "$1" )
-                ;;
-                *)
-                    error "search pattern is not supported"
-                ;;
-            esac
+#*      -M |--markdown              search for 'remove', 'install' or 'update'
+        -M|--markdown)
+            autosuffix=".md"
+            t="#"
+            b="**"
         ;;
 #*      -o |--outfile filename      output file name
         -o|--outfile)
@@ -127,9 +126,19 @@ while true ; do
             else
                 error "this is not a direcory, did you mean --outdir instead?"
             fi
-            if [ -z "$autofilename" ] ; then
-                autofilename=".txt"
-            fi
+            autofilename="yes"
+        ;;
+#*      -s |--search pattern        search for 'remove', 'install' or 'update'
+        -s|--search)
+            shift
+            case "$1" in
+                remove|install|update)
+                    target_pattern=( "$1" )
+                ;;
+                *)
+                    error "search pattern is not supported"
+                ;;
+            esac
         ;;
 #*      -t |--title title           title for the report
         -t|--title)
@@ -157,14 +166,14 @@ done
 
 if [ -n "$autofilename" ] ; then
     #TODO add .md..
-    outfile+="$autofilename"
+    outfile+="$autosuffix"
 fi
 
-echo "= Package Log =" | tee -a $tmpfile
-echo "== Date Based View ==" | tee -a $tmpfile
-echo "=== $day ===" | tee -a $tmpfile
-echo "==== $title ($me) ====" | tee -a $tmpfile
-echo "===== $host ($up) =====" | tee -a $tmpfile
+echo "$t Package Log $t" | tee -a $tmpfile
+echo "$t$t Date Based View $t$t" | tee -a $tmpfile
+echo "$t$t$t $day $t$t$t" | tee -a $tmpfile
+echo "$t$t$t$t $title ($me) $t$t$t$t" | tee -a $tmpfile
+echo "$t$t$t$t$t $host ($up) $t$t$t$t$t" | tee -a $tmpfile
 
 for p in ${target_pattern[@]} ; do
     case "$p" in
