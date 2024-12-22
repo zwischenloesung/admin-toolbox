@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-#** Version: 2.0
+#** Version: 2.1
 #* Very basic script to track todays debian package installations
 #* and print it in a trac-wiki compatible form..
 ########################################################################
@@ -34,6 +34,10 @@ host=`hostname`
 
 up=`uptime -p`
 
+tmpfile=""
+
+autofilename=""
+
 print_usage()
 {
     echo "usage: $0"
@@ -55,11 +59,11 @@ print_package_log()
     text="$1"
     pattern="$2"
     day="$3"
-    echo "====== $text ======"
+    echo "====== $text ======" | tee -a $tmpfile
     grep $day ${logfile[@]} | \
         grep "$pattern " | \
-        awk '{ print " * '"'''"'"$4"'"'''"': "$5" -> "$6"" }'
-    echo ""
+        awk '{ print " * '"'''"'"$4"'"'''"': "$5" -> "$6"" }' | tee -a $tmpfile
+    echo "" | tee -a $tmpfile
 }
 
 die()
@@ -104,10 +108,28 @@ while true ; do
                 ;;
             esac
         ;;
-#*      -o |--outfile filename      output file
+#*      -o |--outfile filename      output file name
         -o|--outfile)
             shift
-            outfile=( "$1" )
+            tmpfile=`mktemp`
+            if [ -d "$1" ] ; then
+                error "this is a direcory, did you mean --outdir instead?"
+            else
+                outfile="$1"
+            fi
+        ;;
+#*      -O |--outdir dirname        directory to put automatic file names
+        -O|--outdir)
+            shift
+            tmpfile=`mktemp`
+            if [ -d "$1" ] ; then
+                outfile="${1}/packages_by_date_${day}_${host}"
+            else
+                error "this is not a direcory, did you mean --outdir instead?"
+            fi
+            if [ -z "$autofilename" ] ; then
+                autofilename=".txt"
+            fi
         ;;
 #*      -t |--title title           title for the report
         -t|--title)
@@ -133,13 +155,16 @@ while true ; do
     shift
 done
 
-if [ -n "$outfile" ] ; then
-    error "output to file is not implemented yet, use redirect"
+if [ -n "$autofilename" ] ; then
+    #TODO add .md..
+    outfile+="$autofilename"
 fi
 
-echo "=== $day ==="
-echo "==== $title ($me) ===="
-echo "===== $host ($up) ====="
+echo "= Package Log =" | tee -a $tmpfile
+echo "== Date Based View ==" | tee -a $tmpfile
+echo "=== $day ===" | tee -a $tmpfile
+echo "==== $title ($me) ====" | tee -a $tmpfile
+echo "===== $host ($up) =====" | tee -a $tmpfile
 
 for p in ${target_pattern[@]} ; do
     case "$p" in
@@ -154,3 +179,8 @@ for p in ${target_pattern[@]} ; do
         ;;
     esac
 done
+
+if [ -n "$outfile" ] ; then
+    cp $tmpfile $outfile
+    rm $tmpfile
+fi
