@@ -74,10 +74,12 @@ print_package_log()
     else
         grep $day ${logfile[@]} | grep "$pattern " | \
             awk '{ print " * '"$b"'"$4"'"$b"': "$5" -> "$6"" }' | \
-            tee -a $tmpfile
+            tee -a $tmpfile | grep ".*"
         retval=$?
     fi
-    let found_something+=1
+    if [ $retval -eq 0 ] ; then
+        let found_something+=1
+    fi
     echo "" | tee -a $tmpfile
 }
 
@@ -200,7 +202,7 @@ for p in ${target_pattern[@]} ; do
 done
 
 if [ -n "$outfile" ] ; then
-    if [ $found_something > 0 ] ; then
+    if [ $found_something -gt 0 ] ; then
         cp $tmpfile $outfile
     else
         echo "no package changes found"
