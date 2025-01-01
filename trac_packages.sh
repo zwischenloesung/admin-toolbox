@@ -17,7 +17,7 @@ outfile=
 logfile=( "/var/log/dpkg.log" "/var/log/dpkg.log.1" )
 
 # default search for everything
-target_pattern=( "remove" "install" "update" )
+target_pattern=( "remove" "install" "upgrade" )
 
 # default title
 title="Upgrades"
@@ -113,7 +113,7 @@ while true ; do
             print_help
             exit 0
         ;;
-#*      -M |--markdown              search for 'remove', 'install' or 'update'
+#*      -M |--markdown              search for 'remove', 'install' or 'upgrade'
         -M|--markdown)
             autosuffix=".md"
             t="#"
@@ -140,11 +140,11 @@ while true ; do
             fi
             autofilename="yes"
         ;;
-#*      -s |--search pattern        search for 'remove', 'install' or 'update'
+#*      -s |--search pattern        search for 'remove', 'install' or 'upgrade'
         -s|--search)
             shift
             case "$1" in
-                remove|install|update)
+                remove|install|upgrade)
                     target_pattern=( "$1" )
                 ;;
                 *)
@@ -195,8 +195,8 @@ for p in ${target_pattern[@]} ; do
         install)
             print_package_log "installed" "$p" "$day"
         ;;
-        update)
-            print_package_log "updated" "$p" "$day"
+        upgrade)
+            print_package_log "upgraded" "$p" "$day"
         ;;
     esac
 done
