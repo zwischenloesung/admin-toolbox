@@ -43,6 +43,13 @@ autosuffix=".txt"
 t="="
 b="'''"
 
+lf=()
+for f in ${logfile[@]} ; do
+    if [ -r "$f" ] ; then
+        lf=(${lf[@]} $f)
+    fi
+done
+
 print_usage()
 {
     echo "usage: $0"
