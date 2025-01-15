@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################
-#** Version: 2.1
+#** Version: 2.2.0
 #* Very basic script to track todays debian package installations
 #* and print it in a trac-wiki compatible form (or markdown)..
 ########################################################################
