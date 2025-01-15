@@ -49,6 +49,7 @@ for f in ${logfile[@]} ; do
         lf=(${lf[@]} $f)
     fi
 done
+logfile=( ${lf[@]} )
 
 print_usage()
 {
