@@ -52,22 +52,27 @@ yaml.add_representer(Quoted, quoted_presenter)
 
 def q(s): return Quoted(str(s))
 
-def main():
+def parse_input():
     if not sys.stdin.isatty():
         combined_name, index, sub_sensors = parse_stdin()
     else:
-        combined_name = slugify(input("Enter CombinedSensor type name: ").strip())
+        combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
+        if not combined_name:
+            return None, None, None
         index = input("Enter the CombinedSensor index (default 0000): ").strip() or "0000"
         sub_sensors = []
         while True:
-            sub_in = input("Enter sub-sensor name (empty to finish): ").strip()
+            sub_in = input("Enter sub-sensor name (empty to finish CombinedSensor): ").strip()
             if not sub_in:
                 break
             sub_name = slugify(sub_in)
             unit = input(f"Enter unit for '{sub_name}': ").strip()
             stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
             sub_sensors.append((sub_name, unit, stype))
+    return combined_name, index, sub_sensors
 
+
+def produce_output(combined_name, index, sub_sensors):
     sources = []
     sourcetypes = []
     mapping = {}
@@ -128,11 +133,32 @@ def main():
     )
     print("".join(leading_spaces + line for line in raw_yaml.splitlines(True)))
 
-    print("\n--- Mapping (Python dict) ---")
-    print("uuid_map = {")
-    for k, v in mapping.items():
-        print(f"    '{k}': '{v}',")
-    print("}")
+#    print("\n--- Mapping (Python dict) ---")
+#    print("uuid_map = {")
+#    for k, v in mapping.items():
+#        print(f"    '{k}': '{v}',")
+#    print("}")
+
+def main():
+
+    sensor_libs = []
+
+    do_continue = True
+    while do_continue:
+        combined_name, index, sub_sensors = parse_input()
+        if not combined_name:
+            do_continue = False
+        else:
+            sensor_libs.append([ combined_name, index, sub_sensors ])
+    print(sensor_libs)
+
+    for s in sensor_libs:
+        combined_name = s[0]
+        index = s[1]
+        sub_sensors = s[2]
+        produce_output(combined_name, index, sub_sensors)
+
+
 
 if __name__ == "__main__":
     main()
