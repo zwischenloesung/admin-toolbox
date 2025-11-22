@@ -11,6 +11,7 @@
 import sys
 import uuid
 import yaml
+import json
 import re
 
 # Configurable indent prefix
@@ -52,6 +53,31 @@ yaml.add_representer(Quoted, quoted_presenter)
 
 def q(s): return Quoted(str(s))
 
+def parse_meta():
+    meta = None
+    hasMeta = True
+    while hasMeta:
+        if not meta:
+            m = input("Enter meta JSON (empty to skip, a key or JSON): ").strip()
+        else:
+            m = input("Enter meta JSON (empty to skip or the next key): ").strip()
+        if not m:
+            return meta
+        elif m.startswith("{") or m.startswith("["):
+            if not meta:
+                try:
+                    json.loads(m)
+                except:
+                    input("WARNING/ERROR: Unable to parse JSON, please try again..")
+                return m
+            else:
+                input("WARNING/ERROR: JSON found but meta not empty, please try again..")
+        else:
+            if not meta:
+                meta = {}
+            meta[m] = input(f"Now enter the value for '{m}': ").strip()
+    return meta
+
 def parse_input():
     if not sys.stdin.isatty():
         combined_name, index, sub_sensors = parse_stdin()
@@ -59,17 +85,32 @@ def parse_input():
         combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
         if not combined_name:
             return None, None, None
-        index = input("Enter the CombinedSensor index (default 0000): ").strip() or "0000"
+        index = input("Enter the CombinedSensor index ([0000]): ").strip() or "0000"
         sub_sensors = []
         while True:
-            sub_in = input("Enter sub-sensor name (empty to finish CombinedSensor): ").strip()
+            sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
             if not sub_in:
                 break
             sub_name = slugify(sub_in)
             unit = input(f"Enter unit for '{sub_name}': ").strip()
             stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
-            sub_sensors.append((sub_name, unit, stype))
+            meta = parse_meta()
+
+
+            sub_sensors.append((sub_name, unit, stype, meta))
     return combined_name, index, sub_sensors
+
+
+def json_to_string(json_input):
+    if isinstance(json_input, str):
+        try:
+            json_input = json.loads(json_input)
+        except json.JSONDecodeError:
+            # this should NEVER happen as we check the input already..
+            raise ValueError("Invalid JSON string")
+    elif not isinstance(json_input, dict):
+        raise ValueError("Input must be a JSON string or a dict")
+    return json.dumps(json_input)
 
 
 def produce_output(combined_name, index, sub_sensors):
@@ -99,7 +140,7 @@ def produce_output(combined_name, index, sub_sensors):
     })
 
     # Sub-sensors
-    for sub_name, unit, stype in sub_sensors:
+    for sub_name, unit, stype, meta in sub_sensors:
         st_uuid = q(gen_uuid())
         src_uuid = q(gen_uuid())
         src_name = f"{combined_name}-{sub_name}-{index}"
@@ -110,6 +151,7 @@ def produce_output(combined_name, index, sub_sensors):
             "parentname": q(f"{combined_name}-{index}"),
             "parentuuid": src_combined_uuid,
             "typeuuid": st_uuid,
+            "meta": json_to_string(meta),
         })
         sourcetypes.append({
             "uuid": st_uuid,
