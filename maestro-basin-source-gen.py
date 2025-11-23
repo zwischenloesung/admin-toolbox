@@ -17,6 +17,12 @@ import re
 # Configurable indent prefix
 leading_spaces = "      "  # 6 spaces
 
+units = {
+    'temp': '°C',
+    'humid': '%',
+    'ph': 'pH',
+}
+
 def gen_uuid():
     return str(uuid.uuid4())
 
@@ -78,6 +84,12 @@ def parse_meta():
             meta[m] = input(f"Now enter the value for '{m}': ").strip()
     return meta
 
+def guess_unit(name):
+    for k, v in units.items():
+        if k in name.lower():
+            return v
+    return None
+
 def parse_input():
     if not sys.stdin.isatty():
         combined_name, index, sub_sensors = parse_stdin()
@@ -92,7 +104,10 @@ def parse_input():
             if not sub_in:
                 break
             sub_name = slugify(sub_in)
-            unit = input(f"Enter unit for '{sub_name}': ").strip()
+            u = guess_unit(sub_name)
+            unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
+            if not unit:
+                unit = u
             stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
             meta = parse_meta()
 
