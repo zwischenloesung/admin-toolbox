@@ -117,7 +117,9 @@ def parse_input():
 
 
 def json_to_string(json_input):
-    if isinstance(json_input, str):
+    if json_input == None:
+        return None
+    elif isinstance(json_input, str):
         try:
             json_input = json.loads(json_input)
         except json.JSONDecodeError:
