@@ -51,6 +51,28 @@ def parse_stdin():
         subs.append((subname, unit, stype))
     return combined, index, subs
 
+def parse_interactive():
+
+    combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
+    if not combined_name:
+        return None, None, None
+    index = input("Enter the CombinedSensor index ([0000]): ").strip() or "0000"
+    sub_sensors = []
+    while True:
+        sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
+        if not sub_in:
+            break
+        sub_name = slugify(sub_in)
+        u = guess_unit(sub_name)
+        unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
+        if not unit:
+            unit = u
+        stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
+        meta = parse_meta()
+
+        sub_sensors.append((sub_name, unit, stype, meta))
+    return combined_name, index, sub_sensors
+
 # Quoted string wrapper
 class Quoted(str): pass
 def quoted_presenter(dumper, data):
@@ -94,25 +116,7 @@ def parse_input():
     if not sys.stdin.isatty():
         combined_name, index, sub_sensors = parse_stdin()
     else:
-        combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
-        if not combined_name:
-            return None, None, None
-        index = input("Enter the CombinedSensor index ([0000]): ").strip() or "0000"
-        sub_sensors = []
-        while True:
-            sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
-            if not sub_in:
-                break
-            sub_name = slugify(sub_in)
-            u = guess_unit(sub_name)
-            unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
-            if not unit:
-                unit = u
-            stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
-            meta = parse_meta()
-
-
-            sub_sensors.append((sub_name, unit, stype, meta))
+        combined_name, index, sub_sensors = parse_interactive()
     return combined_name, index, sub_sensors
 
 
