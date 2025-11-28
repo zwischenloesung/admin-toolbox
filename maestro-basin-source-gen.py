@@ -113,7 +113,7 @@ def guess_unit(name):
     return None
 
 
-def produce_output(combined_name, index, sub_sensors):
+def produce_output(combined_name, index, sub_sensors, do_prepend_parent=False):
     sources = []
     sourcetypes = []
     mapping = {}
@@ -147,7 +147,10 @@ def produce_output(combined_name, index, sub_sensors):
     for sub_name, unit, stype, meta in sub_sensors:
         st_uuid = q(gen_uuid())
         src_uuid = q(gen_uuid())
-        src_name = f"{combined_name}{indexs}-{sub_name}"
+        if do_prepend_parent:
+            src_name = f"{combined_name}{indexs}-{sub_name}"
+        else:
+            src_name = sub_name
 
         sources.append({
             "uuid": src_uuid,
@@ -190,6 +193,10 @@ def main():
     if not sys.stdin.isatty():
         parse = parse_stdin
     else:
+        do_prepend_parent = False
+        d = slugify(input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip())
+        if d.lower() == "y":
+            do_prepend_parent = True
         parse = parse_interactive
 
     sensor_libs = []
@@ -207,7 +214,7 @@ def main():
         combined_name = s[0]
         index = s[1]
         sub_sensors = s[2]
-        produce_output(combined_name, index, sub_sensors)
+        produce_output(combined_name, index, sub_sensors, do_prepend_parent)
 
 
 
