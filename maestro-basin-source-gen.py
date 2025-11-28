@@ -56,7 +56,7 @@ def parse_interactive():
     combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
     if not combined_name:
         return None, None, None
-    index = input("Enter the CombinedSensor index ([0000]): ").strip() or "0000"
+    index = input("Enter the CombinedSensor index ('-' to skip, [0000]): ").strip() or "0000"
     sub_sensors = []
     while True:
         sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
@@ -144,9 +144,13 @@ def produce_output(combined_name, index, sub_sensors):
     src_combined_uuid = q(gen_uuid())
     combined_name_q = q(combined_name)
 
+    if index == "-":
+        indexs = ""
+    else:
+        indexs = f"-{index}"
     sources.append({
         "uuid": src_combined_uuid,
-        "name": q(f"{combined_name}-{index}"),
+        "name": q(f"{combined_name}{indexs}"),
         "parentname": q(""),
         "parentuuid": q(""),
         "typeuuid": st_combined_uuid,
@@ -164,12 +168,12 @@ def produce_output(combined_name, index, sub_sensors):
     for sub_name, unit, stype, meta in sub_sensors:
         st_uuid = q(gen_uuid())
         src_uuid = q(gen_uuid())
-        src_name = f"{combined_name}-{sub_name}-{index}"
+        src_name = f"{combined_name}{indexs}-{sub_name}"
 
         sources.append({
             "uuid": src_uuid,
             "name": q(src_name),
-            "parentname": q(f"{combined_name}-{index}"),
+            "parentname": q(f"{combined_name}{indexs}"),
             "parentuuid": src_combined_uuid,
             "typeuuid": st_uuid,
             "meta": json_to_string(meta),
