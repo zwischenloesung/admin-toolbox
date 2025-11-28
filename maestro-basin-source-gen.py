@@ -112,13 +112,6 @@ def guess_unit(name):
             return v
     return None
 
-def parse_input():
-    if not sys.stdin.isatty():
-        combined_name, index, sub_sensors = parse_stdin()
-    else:
-        combined_name, index, sub_sensors = parse_interactive()
-    return combined_name, index, sub_sensors
-
 
 def produce_output(combined_name, index, sub_sensors):
     sources = []
@@ -194,11 +187,16 @@ def produce_output(combined_name, index, sub_sensors):
 
 def main():
 
+    if not sys.stdin.isatty():
+        parse = parse_stdin
+    else:
+        parse = parse_interactive
+
     sensor_libs = []
 
     do_continue = True
     while do_continue:
-        combined_name, index, sub_sensors = parse_input()
+        combined_name, index, sub_sensors = parse()
         if not combined_name:
             do_continue = False
         else:
