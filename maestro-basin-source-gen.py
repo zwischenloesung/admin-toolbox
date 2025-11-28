@@ -94,7 +94,7 @@ def parse_meta():
         elif m.startswith("{") or m.startswith("["):
             if not meta:
                 try:
-                    json.loads(m)
+                    m = json.loads(m)
                 except:
                     input("WARNING/ERROR: Unable to parse JSON, please try again..")
                 return m
@@ -118,20 +118,6 @@ def parse_input():
     else:
         combined_name, index, sub_sensors = parse_interactive()
     return combined_name, index, sub_sensors
-
-
-def json_to_string(json_input):
-    if json_input == None:
-        return None
-    elif isinstance(json_input, str):
-        try:
-            json_input = json.loads(json_input)
-        except json.JSONDecodeError:
-            # this should NEVER happen as we check the input already..
-            raise ValueError("Invalid JSON string")
-    elif not isinstance(json_input, dict):
-        raise ValueError("Input must be a JSON string or a dict")
-    return json.dumps(json_input)
 
 
 def produce_output(combined_name, index, sub_sensors):
@@ -176,7 +162,7 @@ def produce_output(combined_name, index, sub_sensors):
             "parentname": q(f"{combined_name}{indexs}"),
             "parentuuid": src_combined_uuid,
             "typeuuid": st_uuid,
-            "meta": json_to_string(meta),
+            "meta": meta,
         })
         sourcetypes.append({
             "uuid": st_uuid,
