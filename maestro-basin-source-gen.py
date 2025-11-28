@@ -74,7 +74,9 @@ def parse_interactive():
         stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
         meta = parse_meta()
 
-        sub_sensors.append((sub_name, displ_name, dev_type, unit, stype, meta))
+        skipit = slugify(input("Please confirm the entry ([Y/n]): ").strip())
+        if not skipit.lower() == "n":
+            sub_sensors.append((sub_name, displ_name, dev_type, unit, stype, meta))
     return combined_name, index, sub_sensors
 
 # Quoted string wrapper
