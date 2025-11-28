@@ -57,6 +57,7 @@ def parse_interactive():
     combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
     if not combined_name:
         return None, None, None
+    #TODO - we might want to override the auto generated UUIDs here...
     index = input("Enter the CombinedSensor index ('-' to skip, [0000]): ").strip() or "0000"
     sub_sensors = []
     while True:
