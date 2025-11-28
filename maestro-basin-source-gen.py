@@ -38,7 +38,7 @@ def parse_stdin():
     """
     lines = [l.rstrip() for l in sys.stdin if l.strip()]
     if not lines:
-        return None, None, []
+        return None, None, None, None, []
     combined = slugify(lines[0])
     index = lines[1].strip() if len(lines) > 1 else "0000"
     subs = []
@@ -50,21 +50,24 @@ def parse_stdin():
         unit = parts[1].strip() if len(parts) > 1 else ""
         stype = parts[2].strip() if len(parts) > 2 else "float"
         subs.append((subname, unit, stype))
-    return combined, index, subs
+    return combined, index, None, None, subs
 
 def parse_interactive():
 
     combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
     if not combined_name:
-        return None, None, None
-    #TODO - we might want to override the auto generated UUIDs here...
+        return None, None, None, None, []
     index = input("Enter the CombinedSensor index ('-' to skip, [0000]): ").strip() or "0000"
+    combined_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
+    combined_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
     sub_sensors = []
     while True:
         sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
         if not sub_in:
             break
         sub_name = slugify(sub_in)
+        sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
+        sub_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
         displ_name = input("Enter display name (empty to skip): ").strip()
         dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         u = guess_unit(sub_name)
@@ -76,8 +79,17 @@ def parse_interactive():
 
         skipit = slugify(input("Please confirm the entry ([Y/n]): ").strip())
         if not skipit.lower() == "n":
-            sub_sensors.append((sub_name, displ_name, dev_type, unit, stype, meta))
-    return combined_name, index, sub_sensors
+            sub_sensors.append((
+                sub_name,
+                sub_type_uuid,
+                sub_source_uuid,
+                displ_name,
+                dev_type,
+                unit,
+                stype,
+                meta
+            ))
+    return combined_name, index, combined_type_uuid, combined_source_uuid, sub_sensors
 
 # Quoted string wrapper
 class Quoted(str): pass
@@ -119,14 +131,27 @@ def guess_unit(name):
     return None
 
 
-def produce_output(combined_name, index, sub_sensors, do_prepend_parent=False):
+def produce_output(
+        combined_name,
+        index,
+        combined_type_uuid,
+        combined_source_uuid,
+        sub_sensors,
+        do_prepend_parent=False
+    ):
     sources = []
     sourcetypes = []
     mapping = {}
 
     # Combined sensor
-    st_combined_uuid = q(gen_uuid())
-    src_combined_uuid = q(gen_uuid())
+    if combined_type_uuid:
+        st_combined_uuid = combined_type_uuid
+    else:
+        st_combined_uuid = q(gen_uuid())
+    if combined_source_uuid:
+        src_combined_uuid = combined_source_uuid
+    else:
+        src_combined_uuid = q(gen_uuid())
     combined_name_q = q(combined_name)
 
     if index == "-":
@@ -150,9 +175,24 @@ def produce_output(combined_name, index, sub_sensors, do_prepend_parent=False):
     })
 
     # Sub-sensors
-    for sub_name, displ_name, dev_type, unit, stype, meta in sub_sensors:
-        st_uuid = q(gen_uuid())
-        src_uuid = q(gen_uuid())
+    for (
+        sub_name,
+        sub_type_uuid,
+        sub_uuid,
+        displ_name,
+        dev_type,
+        unit,
+        stype,
+        meta
+    ) in sub_sensors:
+        if sub_type_uuid:
+            st_uuid = sub_type_uuid
+        else:
+            st_uuid = q(gen_uuid())
+        if sub_uuid:
+            src_uuid = sub_uuid
+        else:
+            src_uuid = q(gen_uuid())
         if do_prepend_parent:
             src_name = f"{combined_name}{indexs}-{sub_name}"
         else:
@@ -216,18 +256,20 @@ def main():
 
     do_continue = True
     while do_continue:
-        combined_name, index, sub_sensors = parse()
+        combined_name, index, tuuid, suuid, sub_sensors = parse()
         if not combined_name:
             do_continue = False
         else:
-            sensor_libs.append([ combined_name, index, sub_sensors ])
+            sensor_libs.append([ combined_name, index, tuuid, suuid, sub_sensors ])
     print(sensor_libs)
 
     for s in sensor_libs:
         combined_name = s[0]
         index = s[1]
-        sub_sensors = s[2]
-        produce_output(combined_name, index, sub_sensors, do_prepend_parent)
+        tuuid = s[2]
+        suuid = s[3]
+        sub_sensors = s[4]
+        produce_output(combined_name, index, tuuid, suuid, sub_sensors, do_prepend_parent)
 
 
 
