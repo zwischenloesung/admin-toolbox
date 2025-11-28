@@ -30,12 +30,14 @@ def slugify(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "_", name.strip().replace(" ", "_"))
 
 # TODO parse_stdin() supports far less features than parse_interactive()..
-def parse_stdin():
+def parse_stdin(do_override_uuids=False):
     """Parse lines of form:
        CombinedSensorName
        Index
           subname unit [type]
     """
+    if do_override_uuids:
+        print("Not implemented in this context yet.")
     lines = [l.rstrip() for l in sys.stdin if l.strip()]
     if not lines:
         return None, None, None, None, []
@@ -52,22 +54,32 @@ def parse_stdin():
         subs.append((subname, unit, stype))
     return combined, index, None, None, subs
 
-def parse_interactive():
+def parse_interactive(do_override_uuids):
 
     combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
     if not combined_name:
         return None, None, None, None, []
     index = input("Enter the CombinedSensor index ('-' to skip, [0000]): ").strip() or "0000"
-    combined_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
-    combined_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
+    if do_override_uuids:
+        combined_type_uuid = input(
+            "Enter sourcetype UUID (empty means autogenerate): "
+        ).strip()
+        combined_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
+    else:
+        combined_type_uuid = None
+        combined_source_uuid = None
     sub_sensors = []
     while True:
         sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
         if not sub_in:
             break
         sub_name = slugify(sub_in)
-        sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
-        sub_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
+        if do_override_uuids:
+            sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
+            sub_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
+        else:
+            sub_type_uuid = None
+            sub_source_uuid = None
         displ_name = input("Enter display name (empty to skip): ").strip()
         dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         u = guess_unit(sub_name)
@@ -247,6 +259,11 @@ def main():
         parse = parse_stdin
     else:
         do_prepend_parent = False
+        o = slugify(input("Autogenerate all UUIDs? ([Y/n]): ").strip())
+        if o.lower() == "n":
+            do_override_uuids = True
+        else:
+            do_override_uuids = False
         d = slugify(input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip())
         if d.lower() == "y":
             do_prepend_parent = True
@@ -256,7 +273,7 @@ def main():
 
     do_continue = True
     while do_continue:
-        combined_name, index, tuuid, suuid, sub_sensors = parse()
+        combined_name, index, tuuid, suuid, sub_sensors = parse(do_override_uuids)
         if not combined_name:
             do_continue = False
         else:
