@@ -64,6 +64,7 @@ def parse_interactive():
         if not sub_in:
             break
         sub_name = slugify(sub_in)
+        displ_name = input("Enter display name (empty to skip): ").strip()
         dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         u = guess_unit(sub_name)
         unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
@@ -72,7 +73,7 @@ def parse_interactive():
         stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
         meta = parse_meta()
 
-        sub_sensors.append((sub_name, dev_type, unit, stype, meta))
+        sub_sensors.append((sub_name, displ_name, dev_type, unit, stype, meta))
     return combined_name, index, sub_sensors
 
 # Quoted string wrapper
@@ -146,13 +147,16 @@ def produce_output(combined_name, index, sub_sensors, do_prepend_parent=False):
     })
 
     # Sub-sensors
-    for sub_name, dev_type, unit, stype, meta in sub_sensors:
+    for sub_name, displ_name, dev_type, unit, stype, meta in sub_sensors:
         st_uuid = q(gen_uuid())
         src_uuid = q(gen_uuid())
         if do_prepend_parent:
             src_name = f"{combined_name}{indexs}-{sub_name}"
         else:
             src_name = sub_name
+        if displ_name:
+            # TODO only "en" currently supported and no way to turn the input question off
+            meta["displayname"] = { "en": displ_name }
         if dev_type:
             dt = dev_type
         else:
