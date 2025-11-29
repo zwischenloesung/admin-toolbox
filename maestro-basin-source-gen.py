@@ -112,7 +112,7 @@ yaml.add_representer(Quoted, quoted_presenter)
 def q(s): return Quoted(str(s))
 
 def parse_meta():
-    meta = None
+    meta = {}
     hasMeta = True
     while hasMeta:
         if not meta:
@@ -131,8 +131,6 @@ def parse_meta():
             else:
                 input("WARNING/ERROR: JSON found but meta not empty, please try again..")
         else:
-            if not meta:
-                meta = {}
             meta[m] = input(f"Now enter the value for '{m}': ").strip()
     return meta
 
@@ -141,6 +139,32 @@ def guess_unit(name):
         if k in name.lower():
             return v
     return None
+
+# limitting depth is not really needed, but might be interesting later for non-interactive
+def quote_textlike(obj, depth=None):
+    # stop descending if depth is a non-None or negative
+    if depth is not None and depth < 0:
+        return obj
+
+    # dict: descend into values
+    if isinstance(obj, dict):
+        if depth == 0:
+            return {k: q(v) if isinstance(v, str) else v for k, v in obj.items()}
+        next_depth = None if depth is None else depth - 1
+        return {k: quote_textlike(v, next_depth) for k, v in obj.items()}
+
+    # list/tuple: same logic
+    if isinstance(obj, (list, tuple)):
+        if depth == 0:
+            return [q(v) if isinstance(v, str) else v for v in obj]
+        next_depth = None if depth is None else depth - 1
+        seq = [quote_textlike(v, next_depth) for v in obj]
+        return type(obj)(seq)
+
+    # leaf: quote strings, leave everything else
+    if isinstance(obj, str):
+        return q(obj)
+    return obj
 
 
 def produce_output(
@@ -156,32 +180,22 @@ def produce_output(
     mapping = {}
 
     # Combined sensor
-    if combined_type_uuid:
-        st_combined_uuid = combined_type_uuid
-    else:
-        st_combined_uuid = q(gen_uuid())
-    if combined_source_uuid:
-        src_combined_uuid = combined_source_uuid
-    else:
-        src_combined_uuid = q(gen_uuid())
-    combined_name_q = q(combined_name)
+    st_combined_uuid = combined_type_uuid if combined_type_uuid else gen_uuid()
+    src_combined_uuid = combined_source_uuid if combined_source_uuid else gen_uuid()
 
-    if index == "-":
-        indexs = ""
-    else:
-        indexs = f"-{index}"
+    indexs = "" if index == "-" else f"-{index}"
     sources.append({
-        "uuid": src_combined_uuid,
+        "uuid": q(src_combined_uuid),
         "name": q(f"{combined_name}{indexs}"),
         "parentname": q(""),
         "parentuuid": q(""),
-        "typeuuid": st_combined_uuid,
+        "typeuuid": q(st_combined_uuid),
     })
     sourcetypes.append({
-        "uuid": st_combined_uuid,
-        "name": combined_name_q,
+        "uuid": q(st_combined_uuid),
+        "name": q(combined_name),
         "class": q("CombinedSensor"),
-        "devicetype": combined_name_q,
+        "devicetype": q(combined_name),
         "type": None,
         "unit": None,
     })
@@ -197,36 +211,26 @@ def produce_output(
         stype,
         meta
     ) in sub_sensors:
-        if sub_type_uuid:
-            st_uuid = sub_type_uuid
-        else:
-            st_uuid = q(gen_uuid())
-        if sub_uuid:
-            src_uuid = sub_uuid
-        else:
-            src_uuid = q(gen_uuid())
-        if do_prepend_parent:
-            src_name = f"{combined_name}{indexs}-{sub_name}"
-        else:
-            src_name = sub_name
+        st_uuid = sub_type_uuid if sub_type_uuid else gen_uuid()
+        src_uuid = sub_uuid if sub_uuid else gen_uuid()
+        src_name = f"{combined_name}{indexs}-{sub_name}" if do_prepend_parent else sub_name
         if displ_name:
             # TODO only "en" currently supported and no way to turn the input question off
             meta["displayname"] = { "en": displ_name }
-        if dev_type:
-            dt = dev_type
-        else:
-            dt = f"{combined_name}-{sub_name}"
+        dt = dev_type if dev_type else f"{combined_name}-{sub_name}"
+
+        meta = quote_textlike(meta) #TODO: in non-interacte we might want to limit this..!?
 
         sources.append({
-            "uuid": src_uuid,
+            "uuid": q(src_uuid),
             "name": q(src_name),
             "parentname": q(f"{combined_name}{indexs}"),
-            "parentuuid": src_combined_uuid,
-            "typeuuid": st_uuid,
+            "parentuuid": q(src_combined_uuid),
+            "typeuuid": q(st_uuid),
             "meta": meta,
         })
         sourcetypes.append({
-            "uuid": st_uuid,
+            "uuid": q(st_uuid),
             "name": q(f"{combined_name}-{sub_name}"),
             "class": q("Sensor"),
             "devicetype": q(dt),
