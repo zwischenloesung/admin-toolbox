@@ -105,7 +105,7 @@ def parse_interactive(do_override_uuids):
         stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
         sub_meta = parse_meta()
 
-        skipit = slugify(input("Please confirm the entry ([Y/n]): ").strip())
+        skipit = input("Please confirm the entry ([Y/n]): ").strip()
         if not skipit.lower() == "n":
             sub_sensors.append((
                 sub_name,
@@ -308,12 +308,12 @@ def main():
         parse = parse_stdin
     else:
         do_prepend_parent = False
-        o = slugify(input("Autogenerate all UUIDs? ([Y/n]): ").strip())
+        o = input("Autogenerate all UUIDs? ([Y/n]): ").strip()
         if o.lower() == "n":
             do_override_uuids = True
         else:
             do_override_uuids = False
-        d = slugify(input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip())
+        d = input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip()
         if d.lower() == "y":
             do_prepend_parent = True
         parse = parse_interactive
