@@ -67,6 +67,9 @@ def parse_interactive(do_override_uuids):
         i = f"{type_displname} {index}" if index else type_displname
         tmp = input(f"Enter source display name ([{i}]): ").strip()
         source_displname = tmp if tmp else i
+    else:
+        type_displname = None
+        source_displname = None
     if do_override_uuids:
         combined_type_uuid = input(
             "Enter sourcetype UUID (empty means autogenerate): "
@@ -97,6 +100,9 @@ def parse_interactive(do_override_uuids):
                 f"Enter source display name ([{i}]): "
             ).strip()
             sub_source_displname = sub_source_displname if sub_source_displname else i
+        else:
+            sub_type_displname = None
+            sub_source_displname = None
         dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         u = guess_unit(sub_name)
         unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
