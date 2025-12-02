@@ -116,7 +116,7 @@ def parse_interactive(do_override_uuids):
     sub_sensors = []
     subcount = 0
     while True:
-        print(f"=== {subcount} ===") ; subcount += 1
+        print(f"=== {subcount} ===")
         sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
         if not sub_in:
             break
@@ -154,22 +154,31 @@ def parse_interactive(do_override_uuids):
         stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
         print("---")
         sub_source_meta = parse_meta()
-        print("---")
-
+        print("===")
+        t = (
+            sub_name,
+            sub_type_uuid,
+            sub_source_uuid,
+            sub_type_displname,
+            sub_source_displname,
+            dev_type,
+            unit,
+            stype,
+            sub_type_meta,
+            sub_source_meta
+        )
+        print(yaml.dump(
+            list(t),
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=True,
+            width=80,
+        ))
+        print("===")
         skipit = input("Please confirm the entry ([Y/n]): ").strip()
         if not skipit.lower() == "n":
-            sub_sensors.append((
-                sub_name,
-                sub_type_uuid,
-                sub_source_uuid,
-                sub_type_displname,
-                sub_source_displname,
-                dev_type,
-                unit,
-                stype,
-                sub_type_meta,
-                sub_source_meta
-            ))
+            sub_sensors.append(t)
+            subcount += 1
     return (
         combined_name,
         index,
@@ -188,14 +197,18 @@ yaml.add_representer(Quoted, quoted_presenter)
 
 def q(s): return Quoted(str(s))
 
-def parse_meta():
+def parse_meta(level=0):
     meta = {}
     hasMeta = True
     while hasMeta:
         if not meta:
-            m = input("Enter meta JSON (empty to skip, a key or JSON): ").strip()
+            m = input(
+                f"Enter meta JSON Level{level} (empty to skip, a key or JSON): "
+            ).strip()
         else:
-            m = input("Enter meta JSON (empty to skip or the next key): ").strip()
+            m = input(
+                f"Enter meta JSON Level{level} (empty to skip or the next key): "
+            ).strip()
         if not m:
             return meta
         elif m.startswith("{") or m.startswith("["):
@@ -208,7 +221,13 @@ def parse_meta():
             else:
                 input("WARNING/ERROR: JSON found but meta not empty, please try again..")
         else:
-            meta[m] = input(f"Now enter the value for '{m}': ").strip()
+            v = input(
+                f"Now enter the value for '{m}' or leave empty to add sub-dict: "
+            ).strip()
+            if v:
+                meta[m] = v
+            else:
+                meta[m] = parse_meta(level + 1)
     return meta
 
 # limitting depth is not really needed, but might be interesting later for non-interactive
@@ -389,7 +408,7 @@ def main():
                 sdname,
                 sub_sensors
             ])
-    print(sensor_libs)
+    #print(sensor_libs)
 
     for s in sensor_libs:
         combined_name = s[0]
