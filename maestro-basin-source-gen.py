@@ -8,26 +8,60 @@
 #    baromrelin hPa float" | ./$0
 #
 
+import os
 import sys
 import uuid
 import yaml
 import json
 import re
 
+from units_registry_loader import get_units_registry
+
 # Configurable indent prefix
 leading_spaces = "      "  # 6 spaces
 
-units = {
-    'temp': '°C',
-    'humid': '%',
-    'ph': 'pH',
-}
+# Prepare tiny global singleton helper copy
+ucum_registry = None
 
 def gen_uuid():
     return str(uuid.uuid4())
 
 def slugify(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "_", name.strip().replace(" ", "_"))
+
+def search_ucum(query, type_query=None, limit=8):
+    while True:
+        q = ucum_registry.lookup_quantity_kinds(query=query, limit=limit)
+        if len(q) < 1:
+            q = ucum_registry.lookup_quantity_kinds(query=type_query, limit=limit)
+
+        u = 0 ; i = 0
+        if len(q) > 0:
+            print("  One of the following quantity-kinds:units could match:")
+            for key, score in q:
+                qk = ucum_registry.quantity_kinds[key]
+                print(
+                    f"    {i}: {key} {qk.label} [{qk.symbol}] (unit={qk.default_unit}) " +
+                    f"score={score}"
+                )
+                i += 1
+            r = input(f"Enter the index that fits best (or new search terms: ").strip()
+            try:
+                j = int(r)
+                if j > len(q):
+                    print(
+                        f"There are only {len(q)} number of items to choose from... " +
+                        "Please try again."
+                    )
+                else:
+                    qk = ucum_registry.quantity_kinds[q[j][0]]
+                    return qk.__dict__
+            except Exception as e:
+                print(e)
+                query = r
+        else:
+            query = input("No results found, please add new search terms: ").strip()
+
 
 # TODO parse_stdin() supports far less features than parse_interactive()..
 def parse_stdin(do_override_uuids=False):
@@ -56,6 +90,7 @@ def parse_stdin(do_override_uuids=False):
 
 def parse_interactive(do_override_uuids):
 
+    print("################################################################################")
     combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
     if not combined_name:
         return None, None, None, None, None, None, []
@@ -79,7 +114,9 @@ def parse_interactive(do_override_uuids):
         combined_type_uuid = None
         combined_source_uuid = None
     sub_sensors = []
+    subcount = 0
     while True:
+        print(f"=== {subcount} ===") ; subcount += 1
         sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
         if not sub_in:
             break
@@ -104,12 +141,20 @@ def parse_interactive(do_override_uuids):
             sub_type_displname = None
             sub_source_displname = None
         dev_type = input("Enter device-type (empty means autogenerate): ").strip()
-        u = guess_unit(sub_name)
-        unit = input(f"Enter unit for '{sub_name}' [{u}]: ").strip()
-        if not unit:
-            unit = u
+        print("---")
+        if ucum_registry:
+            qk = search_ucum(sub_name, dev_type)
+            unit = qk["default_unit"]
+            sub_type_meta = {}
+            sub_type_meta["quantity_kind"] = qk
+            sub_type_meta["uncertainty"] = {}
+        else:
+            unit = input(f"Enter unit for '{sub_name}' ['m']: ").strip()
+        print("---")
         stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
-        sub_meta = parse_meta()
+        print("---")
+        sub_source_meta = parse_meta()
+        print("---")
 
         skipit = input("Please confirm the entry ([Y/n]): ").strip()
         if not skipit.lower() == "n":
@@ -122,7 +167,8 @@ def parse_interactive(do_override_uuids):
                 dev_type,
                 unit,
                 stype,
-                sub_meta
+                sub_type_meta,
+                sub_source_meta
             ))
     return (
         combined_name,
@@ -164,12 +210,6 @@ def parse_meta():
         else:
             meta[m] = input(f"Now enter the value for '{m}': ").strip()
     return meta
-
-def guess_unit(name):
-    for k, v in units.items():
-        if k in name.lower():
-            return v
-    return None
 
 # limitting depth is not really needed, but might be interesting later for non-interactive
 def quote_textlike(obj, depth=None):
@@ -253,12 +293,12 @@ def produce_output(
         dev_type,
         unit,
         stype,
+        sub_type_meta,
         sub_source_meta
     ) in sub_sensors:
         st_uuid = sub_type_uuid if sub_type_uuid else gen_uuid()
         src_uuid = sub_uuid if sub_uuid else gen_uuid()
         src_name = f"{combined_name}{indexs}-{sub_name}" if do_prepend_parent else sub_name
-        sub_type_meta = {}
 
         if sub_type_displname:
             # TODO only "en" currently supported and no way to turn the input question off
@@ -275,7 +315,7 @@ def produce_output(
             "typeuuid": q(st_uuid),
         }
         if sub_source_meta:
-            tmp["meta"] = quote_textlike(sub_source_meta),
+            tmp["meta"] = quote_textlike(sub_source_meta)
         sources.append(tmp)
         tmp = {
             "uuid": q(st_uuid),
@@ -313,6 +353,12 @@ def main():
     if not sys.stdin.isatty():
         parse = parse_stdin
     else:
+        p = os.path.dirname(os.path.realpath(__file__)) + '/maestro-basin-source-gen.ucum.yaml'
+        pi = input(f"Enter path to units/meta file ([{p}]): ").strip()
+        p = pi if pi else p
+        global ucum_registry
+        ucum_registry = get_units_registry()
+
         do_prepend_parent = False
         o = input("Autogenerate all UUIDs? ([Y/n]): ").strip()
         if o.lower() == "n":

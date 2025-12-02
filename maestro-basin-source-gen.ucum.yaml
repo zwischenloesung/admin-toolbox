@@ -1,0 +1,645 @@
+quantity_kinds:
+  relative_humidity:
+    label: "Relative Humidity"
+    symbol: "%RH"
+    default_unit: "%"
+    uri: "http://qudt.org/vocab/quantitykind/RelativeHumidity"
+    aliases:
+      - "rh"
+      - "%rh"
+      - "rel humidity"
+      - "relative humidity"
+      - "humidity"
+    tags:
+      - "air"
+      - "environment"
+      - "meteo"
+
+  oxygen_saturation:
+    label: "Oxygen Saturation"
+    symbol: "%sat"
+    default_unit: "%"
+    uri: "http://qudt.org/vocab/quantitykind/FractionOfOxygenSaturation"
+    aliases:
+      - "%sat"
+      - "o2sat"
+      - "oxygen saturation"
+    tags:
+      - "water"
+      - "aquatic"
+      - "environment"
+
+  temperature_air:
+    label: "Air Temperature"
+    symbol: "°C"
+    default_unit: "Cel"
+    uri: "http://qudt.org/vocab/quantitykind/Temperature"
+    aliases:
+      - "air temp"
+      - "temperature"
+      - "temp_air"
+      - "t_air"
+    tags:
+      - "air"
+      - "meteo"
+      - "environment"
+
+  temperature_air_f:
+    label: "Air Temperature (Fahrenheit)"
+    symbol: "°F"
+    default_unit: "degF"
+    uri: "http://qudt.org/vocab/quantitykind/Temperature"
+    aliases:
+      - "air temp f"
+      - "temperature f"
+      - "temp_air_f"
+      - "t_air_f"
+    tags:
+      - "air"
+      - "meteo"
+      - "environment"
+
+  temperature_water:
+    label: "Water Temperature"
+    symbol: "°C"
+    default_unit: "Cel"
+    uri: "http://qudt.org/vocab/quantitykind/Temperature"
+    aliases:
+      - "water temp"
+      - "temp_water"
+      - "t_water"
+    tags:
+      - "water"
+      - "aquatic"
+      - "environment"
+
+  turbidity:
+    label: "Turbidity"
+    symbol: "FNU"
+    default_unit: "FNU"
+    uri: "http://qudt.org/vocab/quantitykind/Turbidity"
+    aliases:
+      - "turbidity"
+      - "ntu"
+      - "ftu"
+      - "ftueq"
+    tags:
+      - "water"
+      - "aquatic"
+      - "environment"
+
+  conductivity:
+    label: "Electrical Conductivity"
+    symbol: "µS/cm"
+    default_unit: "uS/cm"
+    uri: "http://qudt.org/vocab/quantitykind/ElectricalConductivity"
+    aliases:
+      - "conductivity"
+      - "ec"
+    tags:
+      - "water"
+      - "soil"
+      - "environment"
+
+  co2_concentration:
+    label: "CO₂ Concentration"
+    symbol: "ppm CO₂"
+    default_unit: "ppm"
+    uri: "http://qudt.org/vocab/quantitykind/MoleFractionOfCarbonDioxide"
+    aliases:
+      - "co2"
+      - "co2 ppm"
+      - "co2 concentration"
+    tags:
+      - "air"
+      - "indoor"
+      - "environment"
+
+  co2eq_concentration:
+    label: "CO₂-equivalent Concentration"
+    symbol: "ppm CO₂eq"
+    default_unit: "ppm"
+    uri: "http://qudt.org/vocab/quantitykind/MoleFraction"
+    aliases:
+      - "co2eq"
+      - "co2 eq"
+      - "eco2"
+    tags:
+      - "air"
+      - "indoor"
+      - "environment"
+
+  voc_index:
+    label: "VOC Index"
+    symbol: "index"
+    default_unit: "1"
+    uri: "https://w3id.org/sosa/PlaceHolder"
+    aliases:
+      - "voc"
+      - "tvoc"
+      - "voc index"
+    tags:
+      - "air"
+      - "indoor"
+      - "environment"
+
+  pm1_mass_concentration:
+    label: "PM1 Mass Concentration"
+    symbol: "µg/m³"
+    default_unit: "ug/m3"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "pm1"
+      - "pm1.0"
+      - "pm1 mass"
+    tags:
+      - "air"
+      - "dust"
+      - "environment"
+
+  pm25_mass_concentration:
+    label: "PM2.5 Mass Concentration"
+    symbol: "µg/m³"
+    default_unit: "ug/m3"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "pm2.5"
+      - "pm25"
+      - "pm2_5"
+    tags:
+      - "air"
+      - "dust"
+      - "environment"
+
+  pm10_mass_concentration:
+    label: "PM10 Mass Concentration"
+    symbol: "µg/m³"
+    default_unit: "ug/m3"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "pm10"
+      - "pm_10"
+    tags:
+      - "air"
+      - "dust"
+      - "environment"
+
+  soil_moisture:
+    label: "Soil Moisture"
+    symbol: "%"
+    default_unit: "%"
+    uri: "http://qudt.org/vocab/quantitykind/VolumetricWaterContent"
+    aliases:
+      - "soil moisture"
+      - "vwc"
+      - "soil humidity"
+    tags:
+      - "soil"
+      - "environment"
+
+  solar_irradiance:
+    label: "Solar Irradiance"
+    symbol: "W/m²"
+    default_unit: "W/m2"
+    uri: "http://qudt.org/vocab/quantitykind/Irradiance"
+    aliases:
+      - "irradiance"
+      - "solar"
+      - "pv irradiance"
+      - "sun power"
+    tags:
+      - "pv"
+      - "solar"
+      - "energy"
+
+  pv_dc_voltage:
+    label: "PV DC Voltage"
+    symbol: "V"
+    default_unit: "V"
+    uri: "http://qudt.org/vocab/quantitykind/ElectricPotential"
+    aliases:
+      - "pv voltage"
+      - "dc voltage"
+      - "string voltage"
+    tags:
+      - "pv"
+      - "energy"
+      - "electrical"
+
+  pv_dc_power:
+    label: "PV DC Power"
+    symbol: "W"
+    default_unit: "W"
+    uri: "http://qudt.org/vocab/quantitykind/ElectricPower"
+    aliases:
+      - "pv power"
+      - "dc power"
+      - "string power"
+    tags:
+      - "pv"
+      - "energy"
+      - "electrical"
+
+  wind_direction:
+    label: "Wind Direction"
+    symbol: "°"
+    default_unit: "deg"
+    uri: "http://qudt.org/vocab/quantitykind/PlaneAngle"
+    aliases:
+      - "wind direction"
+      - "wind_dir"
+      - "wd"
+    tags:
+      - "air"
+      - "meteo"
+      - "wind"
+
+  tilt_angle:
+    label: "Tilt Angle"
+    symbol: "°"
+    default_unit: "deg"
+    uri: "http://qudt.org/vocab/quantitykind/PlaneAngle"
+    aliases:
+      - "tilt"
+      - "tilt angle"
+      - "inclination"
+    tags:
+      - "orientation"
+      - "mechanical"
+      - "pv"
+
+  bearing:
+    label: "Bearing"
+    symbol: "°"
+    default_unit: "deg"
+    uri: "http://qudt.org/vocab/quantitykind/PlaneAngle"
+    aliases:
+      - "bearing"
+      - "azimuth"
+      - "heading"
+    tags:
+      - "navigation"
+      - "orientation"
+      - "meteo"
+
+  rainfall_depth:
+    label: "Rainfall Depth"
+    symbol: "mm"
+    default_unit: "mm"
+    uri: "http://qudt.org/vocab/quantitykind/Depth"
+    aliases:
+      - "rain"
+      - "rainfall"
+      - "precipitation"
+      - "rain depth"
+    tags:
+      - "air"
+      - "meteo"
+      - "hydrology"
+
+  wind_speed:
+    label: "Wind Speed"
+    symbol: "m/s"
+    default_unit: "m/s"
+    uri: "http://qudt.org/vocab/quantitykind/Speed"
+    aliases:
+      - "wind speed"
+      - "windspeed"
+      - "wind"
+      - "ws"
+    tags:
+      - "air"
+      - "meteo"
+      - "wind"
+
+  pressure_air:
+    label: "Air Pressure"
+    symbol: "hPa"
+    default_unit: "hPa"
+    uri: "http://qudt.org/vocab/quantitykind/Pressure"
+    aliases:
+      - "air pressure"
+      - "barometric pressure"
+      - "pressure"
+    tags:
+      - "air"
+      - "meteo"
+
+  pressure:
+    label: "Pressure"
+    symbol: "Pa"
+    default_unit: "Pa"
+    uri: "http://qudt.org/vocab/quantitykind/Pressure"
+    aliases:
+      - "pressure"
+      - "absolute pressure"
+      - "fluid pressure"
+    tags:
+      - "air"
+      - "fluid"
+      - "environment"
+
+  altitude:
+    label: "Altitude"
+    symbol: "m"
+    default_unit: "m"
+    uri: "http://qudt.org/vocab/quantitykind/Length"
+    aliases:
+      - "altitude"
+      - "height"
+      - "elevation"
+    tags:
+      - "position"
+      - "gps"
+      - "environment"
+
+  volume:
+    label: "Volume"
+    symbol: "L"
+    default_unit: "L"
+    uri: "http://qudt.org/vocab/quantitykind/Volume"
+    aliases:
+      - "volume"
+      - "liquid volume"
+      - "tank volume"
+    tags:
+      - "water"
+      - "storage"
+      - "process"
+
+  airborne_mass_concentration:
+    label: "Airborne Mass Concentration"
+    symbol: "mg/m³"
+    default_unit: "mg/m3"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "dust concentration"
+      - "mass concentration"
+      - "airborne concentration"
+    tags:
+      - "air"
+      - "dust"
+      - "environment"
+
+  index_generic:
+    label: "Generic Index"
+    symbol: "index"
+    default_unit: "1"
+    uri: "http://qudt.org/vocab/quantitykind/Dimensionless"
+    aliases:
+      - "index"
+      - "score"
+      - "rating"
+    tags:
+      - "dimensionless"
+      - "generic"
+
+  ph_value:
+    label: "pH"
+    symbol: "pH"
+    default_unit: "pH"
+    uri: "http://qudt.org/vocab/quantitykind/AcidityOfAqueousSolution"
+    aliases:
+      - "ph"
+      - "pH value"
+      - "acidity"
+    tags:
+      - "water"
+      - "solution"
+      - "chemistry"
+
+  vapor_pressure_deficit:
+    label: "Vapor Pressure Deficit"
+    symbol: "kPa"
+    default_unit: "kPa"
+    uri: "http://qudt.org/vocab/quantitykind/PressureDifference"
+    aliases:
+      - "vpd"
+      - "vapor pressure deficit"
+      - "vapour pressure deficit"
+    tags:
+      - "air"
+      - "plant"
+      - "leaf"
+      - "greenhouse"
+      - "meteo"
+
+  rainfall_depth_inch:
+    label: "Rainfall Depth (inch)"
+    symbol: "inch"
+    default_unit: "in_i"
+    uri: "http://qudt.org/vocab/quantitykind/Depth"
+    aliases:
+      - "rain inch"
+      - "rainfall inch"
+      - "precipitation inch"
+      - "rain_in"
+    tags:
+      - "air"
+      - "meteo"
+      - "hydrology"
+      - "rainfall"
+
+  length_generic:
+    label: "Length"
+    symbol: "m"
+    default_unit: "m"
+    uri: "http://qudt.org/vocab/quantitykind/Length"
+    aliases:
+      - "length"
+      - "distance"
+      - "path length"
+    tags:
+      - "geometry"
+      - "position"
+      - "mechanical"
+
+  chlorophyll_a_concentration:
+    label: "Chlorophyll-a Concentration"
+    symbol: "µg/L"
+    default_unit: "ug/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "chlorophyll a"
+      - "chl a"
+      - "chla"
+      - "chlorophyll_a"
+    tags:
+      - "water"
+      - "algae"
+      - "biology"
+      - "environment"
+
+  chemical_oxygen_demand:
+    label: "Chemical Oxygen Demand"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "cod"
+      - "chemical oxygen demand"
+      - "chemicaloxigencemand"
+      - "chemicaloxigencemand_f"
+      - "chemicaloxygendemand"
+      - "chemicaloxygendemand_f"
+    tags:
+      - "water"
+      - "wastewater"
+      - "chemistry"
+      - "environment"
+
+  chemical_oxygen_demand_filtered:
+    label: "Chemical Oxygen Demand (filtered)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "cod_f"
+      - "chemical oxygen demand filtered"
+      - "cod filtered"
+      - "chemicaloxigencemand_f"
+      - "chemicaloxygendemand_f"
+    tags:
+      - "water"
+      - "wastewater"
+      - "chemistry"
+      - "environment"
+
+  dissolved_organic_carbon:
+    label: "Dissolved Organic Carbon"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "doc"
+      - "dissolved organic carbon"
+    tags:
+      - "water"
+      - "carbon"
+      - "organic"
+      - "environment"
+
+  nitrate_concentration:
+    label: "Nitrate Concentration (as NO₃⁻)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "nitrate"
+      - "no3"
+      - "no3eq"
+      - "nitrate concentration"
+    tags:
+      - "water"
+      - "nutrients"
+      - "chemistry"
+      - "environment"
+
+  tss_mass_concentration:
+    label: "Total Suspended Solids"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "tss"
+      - "total suspended solids"
+    tags:
+      - "water"
+      - "chemistry"
+      - "environment"
+
+  toc_equivalent:
+    label: "Total Organic Carbon (equivalent)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "toc"
+      - "toceq"
+      - "organic carbon"
+    tags:
+      - "water"
+      - "carbon"
+      - "organic"
+      - "environment"
+
+  uv254_transmittance:
+    label: "UV254 Transmittance"
+    symbol: "Abs/m"
+    default_unit: "Abs/m"
+    uri: "http://qudt.org/vocab/quantitykind/Absorbance"
+    aliases:
+      - "uv254t"
+      - "uv254 transmittance"
+      - "uv transmittance"
+    tags:
+      - "water"
+      - "uv"
+      - "optical"
+      - "chemistry"
+
+  uv254_filtered_transmittance:
+    label: "UV254 Transmittance (filtered)"
+    symbol: "Abs/m"
+    default_unit: "Abs/m"
+    uri: "http://qudt.org/vocab/quantitykind/Absorbance"
+    aliases:
+      - "uv254f"
+      - "uv254 filtered"
+    tags:
+      - "water"
+      - "uv"
+      - "optical"
+      - "chemistry"
+
+  potassium_concentration:
+    label: "Potassium Concentration"
+    symbol: "ppm"
+    default_unit: "ppm"
+    uri: "http://qudt.org/vocab/quantitykind/MoleFraction"
+    aliases:
+      - "k"
+      - "potassium"
+      - "k ppm"
+    tags:
+      - "water"
+      - "nutrients"
+      - "chemistry"
+      - "environment"
+
+  ammonium_concentration:
+    label: "Ammonium Concentration (NH₄⁺)"
+    symbol: "ppm"
+    default_unit: "ppm"
+    uri: "http://qudt.org/vocab/quantitykind/MoleFraction"
+    aliases:
+      - "ammonium"
+      - "nh4"
+      - "nh4+"
+      - "ammonium_n"
+      - "ammonium n"
+    tags:
+      - "water"
+      - "nutrients"
+      - "chemistry"
+      - "environment"
+
+  uv254_transmittance_rate:
+    label: "UV254 Transmittance Rate"
+    symbol: "%/10cm"
+    default_unit: "%/10cm"
+    uri: "http://qudt.org/vocab/quantitykind/Absorbance"  # closest match, refine later
+    aliases:
+      - "uvt254"
+      - "uvt"
+      - "uvt254%"
+      - "uv254 transmittance"
+      - "uv transmittance"
+      - "%/10cm"
+    tags:
+      - "water"
+      - "uv"
+      - "optical"
+      - "chemistry"
+      - "environment"
+
