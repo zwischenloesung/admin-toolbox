@@ -25,10 +25,6 @@ class Quoted(str): pass
 #a global function to mark resp. strings
 def q(s): return Quoted(str(s))
 
-# Default Sourcetype-Class names
-SUPER_COMPLEX_SOURCETYPE = "CombinedSensor"
-SUB_SINGLE_SOURCETYPE = "Sensor"
-
 class Source():
     # Configurable indent prefix
     LEADING_SPACES = "        "  # 8 spaces
@@ -37,7 +33,9 @@ class SourceType():
     # Configurable indent prefix
     LEADING_SPACES = "      "  # 6 spaces
 
-    
+    # Some defaults
+    DEFAULT_SUPER_TYPE = "CombinedSensor"
+    DEFAULT_SUB_TYPE = "Sensor"
 
 def gen_uuid():
     return str(uuid.uuid4())
@@ -108,7 +106,7 @@ def parse_interactive(do_override_uuids):
 
     print("################################################################################")
     combined_name = slugify(input(
-        f"Enter {SUPER_COMPLEX_SOURCETYPE} type name (empty to finish): ").strip())
+        f"Enter {SourceType.DEFAULT_SUPER_TYPE} type name (empty to finish): ").strip())
     if not combined_name:
         return None, None, None, None, None, None, None, []
     dev_type = input("Enter device-type (empty means autogenerate): ").strip()
@@ -136,12 +134,12 @@ def parse_interactive(do_override_uuids):
     while True:
         print(f"=== {subcount} ===")
         sub_in = input(
-            f"Enter sub-sensor name (empty to end this {SUPER_COMPLEX_SOURCETYPE}): ").strip()
+            f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): ").strip()
         if not sub_in:
             break
         sub_name = slugify(sub_in)
-        sc = input(f"Enter a class name (['{SUB_SINGLE_SOURCETYPE}']): ").strip()
-        sub_class = sc if sc else SUB_SINGLE_SOURCETYPE
+        sc = input(f"Enter a class name (['{SourceType.DEFAULT_SUB_TYPE}']): ").strip()
+        sub_class = sc if sc else SourceType.DEFAULT_SUB_TYPE
         sub_dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         if do_override_uuids:
             sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
@@ -310,7 +308,7 @@ def produce_output(
     tmp = {
         "uuid": q(st_combined_uuid),
         "name": q(combined_name),
-        "class": q(SUPER_COMPLEX_SOURCETYPE),
+        "class": q(SourceType.DEFAULT_SUPER_TYPE),
         "devicetype": q(dev_type),
         "type": None,
         "unit": None,
