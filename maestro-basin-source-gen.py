@@ -17,13 +17,6 @@ import re
 
 from units_registry_loader import get_units_registry
 
-# Configurable indent prefix
-LEADING_SPACES = "      "  # 6 spaces
-
-# Default Sourcetype-Class names
-SUPER_COMPLEX_SOURCETYPE = "CombinedSensor"
-SUB_SINGLE_SOURCETYPE = "Sensor"
-
 # Prepare tiny global singleton helper copy
 ucum_registry = None
 
@@ -32,6 +25,19 @@ class Quoted(str): pass
 #a global function to mark resp. strings
 def q(s): return Quoted(str(s))
 
+# Default Sourcetype-Class names
+SUPER_COMPLEX_SOURCETYPE = "CombinedSensor"
+SUB_SINGLE_SOURCETYPE = "Sensor"
+
+class Source():
+    # Configurable indent prefix
+    LEADING_SPACES = "        "  # 8 spaces
+
+class SourceType():
+    # Configurable indent prefix
+    LEADING_SPACES = "      "  # 6 spaces
+
+    
 
 def gen_uuid():
     return str(uuid.uuid4())
@@ -362,17 +368,27 @@ def produce_output(
         sourcetypes.append(tmp)
         mapping[sub_name] = src_uuid
 
-    data = {"sources": sources, "sourcetypes": sourcetypes}
-
-    print("\n--- YAML output ---")
-    raw_yaml = yaml.dump(
-        data,
+    print("\n--- YAML output for 'Sources' ---")
+    source_yaml = yaml.dump(
+        sources,
         sort_keys=False,
         default_flow_style=False,
         allow_unicode=True,
         width=80,
     )
-    print("".join(LEADING_SPACES + line for line in raw_yaml.splitlines(True)))
+    print("".join(Source.LEADING_SPACES + line for line in source_yaml.splitlines(True)))
+    print("\n--- YAML output for 'SourceTypes' ---")
+    sourcetypes_yaml = yaml.dump(
+        sourcetypes,
+        sort_keys=False,
+        default_flow_style=False,
+        allow_unicode=True,
+        width=80,
+    )
+    print(
+        "".join(SourceType.LEADING_SPACES +
+        line for line in sourcetypes_yaml.splitlines(True))
+    )
 
 
 def main():
