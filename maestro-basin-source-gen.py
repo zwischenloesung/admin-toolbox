@@ -18,10 +18,20 @@ import re
 from units_registry_loader import get_units_registry
 
 # Configurable indent prefix
-leading_spaces = "      "  # 6 spaces
+LEADING_SPACES = "      "  # 6 spaces
+
+# Default Sourcetype-Class names
+SUPER_COMPLEX_SOURCETYPE = "CombinedSensor"
+SUB_SINGLE_SOURCETYPE = "Sensor"
 
 # Prepare tiny global singleton helper copy
 ucum_registry = None
+
+# Define a new Class to be represented and ..
+class Quoted(str): pass
+#a global function to mark resp. strings
+def q(s): return Quoted(str(s))
+
 
 def gen_uuid():
     return str(uuid.uuid4())
@@ -74,7 +84,7 @@ def parse_stdin(do_override_uuids=False):
         print("Not implemented in this context yet.")
     lines = [l.rstrip() for l in sys.stdin if l.strip()]
     if not lines:
-        return None, None, None, None, None, None, []
+        return None, None, None, None, None, None, None, []
     combined = slugify(lines[0])
     index = lines[1].strip() if len(lines) > 1 else "0000"
     subs = []
@@ -86,14 +96,16 @@ def parse_stdin(do_override_uuids=False):
         unit = parts[1].strip() if len(parts) > 1 else ""
         stype = parts[2].strip() if len(parts) > 2 else "float"
         subs.append((subname, unit, stype))
-    return combined, index, None, None, None, None, subs
+    return combined, None, index, None, None, None, None, subs
 
 def parse_interactive(do_override_uuids):
 
     print("################################################################################")
-    combined_name = slugify(input("Enter CombinedSensor type name (empty to finish): ").strip())
+    combined_name = slugify(input(
+        f"Enter {SUPER_COMPLEX_SOURCETYPE} type name (empty to finish): ").strip())
     if not combined_name:
-        return None, None, None, None, None, None, []
+        return None, None, None, None, None, None, None, []
+    dev_type = input("Enter device-type (empty means autogenerate): ").strip()
     index = input("Enter the source index ('-' to skip, [0000]): ").strip() or "0000"
     type_displname = input(
         "Enter type display name (empty to skip all display names): "
@@ -117,10 +129,14 @@ def parse_interactive(do_override_uuids):
     subcount = 0
     while True:
         print(f"=== {subcount} ===")
-        sub_in = input("Enter sub-sensor name (empty to finish this CombinedSensor): ").strip()
+        sub_in = input(
+            f"Enter sub-sensor name (empty to end this {SUPER_COMPLEX_SOURCETYPE}): ").strip()
         if not sub_in:
             break
         sub_name = slugify(sub_in)
+        sc = input(f"Enter a class name (['{SUB_SINGLE_SOURCETYPE}']): ").strip()
+        sub_class = sc if sc else SUB_SINGLE_SOURCETYPE
+        sub_dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         if do_override_uuids:
             sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
             sub_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
@@ -140,10 +156,9 @@ def parse_interactive(do_override_uuids):
         else:
             sub_type_displname = None
             sub_source_displname = None
-        dev_type = input("Enter device-type (empty means autogenerate): ").strip()
         print("---")
         if ucum_registry:
-            qk = search_ucum(sub_name, dev_type)
+            qk = search_ucum(sub_name, sub_dev_type)
             unit = qk["default_unit"]
             sub_type_meta = {}
             sub_type_meta["quantity_kind"] = qk
@@ -157,11 +172,12 @@ def parse_interactive(do_override_uuids):
         print("===")
         t = (
             sub_name,
+            sub_class,
             sub_type_uuid,
             sub_source_uuid,
             sub_type_displname,
             sub_source_displname,
-            dev_type,
+            sub_dev_type,
             unit,
             stype,
             sub_type_meta,
@@ -181,6 +197,7 @@ def parse_interactive(do_override_uuids):
             subcount += 1
     return (
         combined_name,
+        dev_type,
         index,
         combined_type_uuid,
         combined_source_uuid,
@@ -189,13 +206,6 @@ def parse_interactive(do_override_uuids):
         sub_sensors
     )
 
-# Quoted string wrapper
-class Quoted(str): pass
-def quoted_presenter(dumper, data):
-    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")
-yaml.add_representer(Quoted, quoted_presenter)
-
-def q(s): return Quoted(str(s))
 
 def parse_meta(level=0):
     meta = {}
@@ -263,6 +273,7 @@ def quote_textlike(obj, depth=None):
 
 def produce_output(
         combined_name,
+        dev_type,
         index,
         combined_type_uuid,
         combined_source_uuid,
@@ -293,8 +304,8 @@ def produce_output(
     tmp = {
         "uuid": q(st_combined_uuid),
         "name": q(combined_name),
-        "class": q("CombinedSensor"),
-        "devicetype": q(combined_name),
+        "class": q(SUPER_COMPLEX_SOURCETYPE),
+        "devicetype": q(dev_type),
         "type": None,
         "unit": None,
     }
@@ -305,11 +316,12 @@ def produce_output(
     # Sub-sensors
     for (
         sub_name,
+        sub_class,
         sub_type_uuid,
         sub_uuid,
         sub_type_displname,
         sub_source_displname,
-        dev_type,
+        sub_dev_type,
         unit,
         stype,
         sub_type_meta,
@@ -323,7 +335,7 @@ def produce_output(
             # TODO only "en" currently supported and no way to turn the input question off
             sub_source_meta["displayname"] = { "en": sub_source_displname }
             sub_type_meta["displayname"] = { "en": sub_type_displname }
-        dt = dev_type if dev_type else f"{combined_name}-{sub_name}"
+        dt = sub_dev_type if sub_dev_type else f"{combined_name}-{sub_name}"
 
         #TODO: in non-interacte we might want to limit the depth of quote_textlike()..!?
         tmp = {
@@ -339,10 +351,11 @@ def produce_output(
         tmp = {
             "uuid": q(st_uuid),
             "name": q(f"{combined_name}-{sub_name}"),
-            "class": q("Sensor"),
+            "class": q(sub_class),
             "devicetype": q(dt),
             "type": stype,  # bare literal
             "unit": q(unit),
+            "unitencoding": q("meta:quantity_kind")
         }
         if sub_type_meta:
             tmp["meta"] = quote_textlike(sub_type_meta)
@@ -359,13 +372,8 @@ def produce_output(
         allow_unicode=True,
         width=80,
     )
-    print("".join(leading_spaces + line for line in raw_yaml.splitlines(True)))
+    print("".join(LEADING_SPACES + line for line in raw_yaml.splitlines(True)))
 
-#    print("\n--- Mapping (Python dict) ---")
-#    print("uuid_map = {")
-#    for k, v in mapping.items():
-#        print(f"    '{k}': '{v}',")
-#    print("}")
 
 def main():
 
@@ -391,16 +399,29 @@ def main():
 
     sensor_libs = []
 
+    # quote stringlike
+    def quoted_representer(dumper, data):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="'")
+    yaml.add_representer(Quoted, quoted_representer)
+
     do_continue = True
     while do_continue:
-        combined_name, index, tuuid, suuid, tdname, sdname, sub_sensors = parse(
-            do_override_uuids
-        )
+        (
+            combined_name,
+            dev_type,
+            index,
+            tuuid,
+            suuid,
+            tdname,
+            sdname,
+            sub_sensors
+        ) = parse(do_override_uuids)
         if not combined_name:
             do_continue = False
         else:
             sensor_libs.append([
                 combined_name,
+                dev_type,
                 index,
                 tuuid,
                 suuid,
@@ -408,24 +429,32 @@ def main():
                 sdname,
                 sub_sensors
             ])
-    #print(sensor_libs)
+
+    # from here on, replace `None` resp. `null` with ``
+    def none_representer(dumper, _):
+        return dumper.represent_scalar('tag:yaml.org,2002:null', '', style=None)
+    yaml.add_representer(type(None), none_representer)
 
     for s in sensor_libs:
         combined_name = s[0]
-        index = s[1]
-        tuuid = s[2]
-        suuid = s[3]
-        tdname = s[4]
-        sdname = s[5]
-        sub_sensors = s[6]
+        dev_type = s[1]
+        index = s[2]
+        tuuid = s[3]
+        suuid = s[4]
+        tdname = s[5]
+        sdname = s[6]
+        sub_sensors = s[7]
         produce_output(
             combined_name,
+            dev_type,
             index,
             tuuid,
             suuid,
             tdname,
             sdname,
-            sub_sensors, do_prepend_parent)
+            sub_sensors,
+            do_prepend_parent
+        )
 
 
 
