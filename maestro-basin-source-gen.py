@@ -107,7 +107,7 @@ class Source():
         if disable_index == True:
             self.index = None
             self.name = sourcetype_name
-        elif not index and not self.index: 
+        elif not index and not self.index:
             self.name = sourcetype_name
         elif not index:
             self.name = sourcetype_name + "_" + self.index
@@ -210,7 +210,7 @@ class Source():
         if not container:
             container = {
                 "sources": {},
-                "sourcetypes": {}, 
+                "sourcetypes": {},
             }
 
         if (
