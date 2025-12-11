@@ -25,20 +25,211 @@ class Quoted(str): pass
 #a global function to mark resp. strings
 def q(s): return Quoted(str(s))
 
-class Source():
-    # Configurable indent prefix
-    LEADING_SPACES = "        "  # 8 spaces
 
 class SourceType():
     # Configurable indent prefix
-    LEADING_SPACES = "      "  # 6 spaces
+    LEADING_SPACES = "    "  # 4 spaces
 
     # Some defaults
     DEFAULT_SUPER_TYPE = "CombinedSensor"
     DEFAULT_SUB_TYPE = "Sensor"
 
-def gen_uuid():
-    return str(uuid.uuid4())
+    def __init__(self):
+        self.uuid = None
+        self.name = None
+        self.classname = None
+        self.devicetype = None
+        self.datatype = None
+        self.dataunit = None
+        self.dataunitencoding = 'meta:quantity_kind'
+        self.meta = {
+            'uncertainty': None,
+            'quantity_kind': None,
+            'displayname': {
+                'en': ""
+            },
+            'tooltip': {
+                'en': ""
+            },
+        }
+
+    def auto_fill(self):
+        if not self.uuid:
+            self.uuid = str(uuid.uuid4())
+
+    def serialize(self):
+        self.auto_fill()
+        o = {
+            "name": self.name,
+            "uuid": self.uuid,
+            "classname": self.classname,
+            "devicetype": self.devicetype,
+            "type": self.datatype,
+            "unit": self.dataunit,
+            "unitencoding": self.dataunitencoding,
+            "meta": self.meta,
+        }
+        return o
+
+
+
+class Source():
+    # Configurable indent prefix
+    LEADING_SPACES = "      "  # 6 spaces
+
+    def __init__(self, sourcetype: SourceType, parentsource=None):
+        self.uuid = None
+        self.name = None
+        self.index = '0000'
+
+        self.sourcetype = sourcetype
+        self.parentsource = parentsource
+        self.sub_sources = []
+
+        self.meta = {
+            'displayname': {
+                'en': ""
+            },
+            'tooltip': {
+                'en': ""
+            },
+        }
+
+    def set_names(
+        self,
+        sourcetype_name,
+        index=None,
+        disable_index=False,
+        devicetype=None,
+    ):
+        sourcetype_name = slugify(sourcetype_name)
+        self.sourcetype.name = sourcetype_name
+        if disable_index == True:
+            self.index = None
+            self.name = sourcetype_name
+        elif not index and not self.index: 
+            self.name = sourcetype_name
+        elif not index:
+            self.name = sourcetype_name + "_" + self.index
+        else:
+            self.index = index
+            self.name = sourcetype_name + "_" + index
+
+        if devicetype:
+            self.sourcetype.devicetype = devicetype
+        else:
+            self.sourcetype.devicetype = sourcetype_name
+
+
+    def set_displayname(self, name, lang="en"):
+        self.meta["displayname"] = { lang: name }
+
+    def set_displaynames(
+        self,
+        sourcetype_displayname=None,
+        source_displayname=None,
+        disable_displaynames=False,
+        lang="en",
+    ):
+        if disable_displaynames:
+            self.meta["displayname"] = { lang: "" }
+            self.sourcetype.meta["displayname"] = { lang: "" }
+        else:
+            if sourcetype_displayname:
+                self.sourcetype.meta["displayname"] = {
+                    lang: sourcetype_displayname
+                }
+            if source_displayname:
+                self.meta["displayname"] = {
+                    lang: source_displayname
+                }
+
+
+    def parturate(self):
+        s = Source(SourceType(), self)
+        self.sub_sources.append(s)
+        return s
+
+    # shortcut for now..
+    def create_sub(
+        self,
+        sub_name,
+        sub_class,
+        sub_type_uuid,
+        sub_source_uuid,
+        sub_type_displayname,
+        sub_source_displayname,
+        sub_dev_type,
+        dataunit,
+        datatype,
+        sub_type_meta,
+        sub_source_meta
+    ):
+        s = self.parturate()
+        s.name = sub_name
+        s.sourcetype.name = sub_name
+        s.sourcetype.classname = sub_class
+        s.sourcetype.uuid = sub_type_uuid
+        s.uuid = sub_source_uuid
+        s.sourcetype.meta["displayname"]["en"] = sub_type_displayname
+        s.meta["displayname"]["en"] = sub_source_displayname
+        s.sourcetype.devicetype = sub_dev_type
+        s.sourcetype.dataunit = dataunit
+        s.sourcetype.datatype = datatype
+        s.meta = sub_source_meta
+        return s
+
+    def auto_fill(self):
+        if not self.uuid:
+            self.uuid = str(uuid.uuid4())
+        if not self.sourcetype:
+            raise Exception(f"ERROR: Source without SourceType: {self.uuid}")
+        else:
+            self.sourcetype.auto_fill()
+        # NOT handling self.parentsource.uuid, see serialize_deep(..)
+
+    def serialize_parameters(self):
+        self.auto_fill()
+        o = {
+            "name": self.name,
+            "uuid": self.uuid,
+            "typeuuid": self.sourcetype.uuid if self.sourcetype else None,
+            "parentuuid": self.parentsource.uuid if self.parentsource else None,
+            "meta": self.meta,
+        }
+        return o
+
+    def serialize_deep(self, container=None, depth=None):
+        if depth == None:
+            pass
+        elif depth > 0:
+            depth -= 1
+        else:
+            return container
+
+        if not container:
+            container = {
+                "sources": {},
+                "sourcetypes": {}, 
+            }
+
+        if (
+            "sources" not in container or
+            "sourcetypes" not in container
+        ):
+            raise Exception("Container corrupt.")
+
+        if self.uuid in container["sources"]:
+            print("WARNING: Duplicate Source entry found, last one takes precedence: {self.uuid}")
+        container["sources"][self.uuid] = self.serialize_parameters()
+        if not self.sourcetype.uuid in container["sourcetypes"]:
+            container["sourcetypes"][self.sourcetype.uuid] = self.sourcetype.serialize()
+
+        for s in self.sub_sources:
+            s.serialize_deep(container, depth)
+        return container
+
+
 
 def slugify(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "_", name.strip().replace(" ", "_"))
@@ -78,81 +269,115 @@ def search_ucum(query, type_query=None, limit=8):
 
 
 # TODO parse_stdin() supports far less features than parse_interactive()..
-def parse_stdin(do_override_uuids=False):
+def parse_stdin():
     """Parse lines of form:
        CombinedSensorName
        Index
           subname unit [type]
     """
-    if do_override_uuids:
-        print("Not implemented in this context yet.")
+    the_source = Source()
     lines = [l.rstrip() for l in sys.stdin if l.strip()]
     if not lines:
-        return None, None, None, None, None, None, None, []
-    combined = slugify(lines[0])
-    index = lines[1].strip() if len(lines) > 1 else "0000"
-    subs = []
+        return None
+    the_source.sourcetype.name = slugify(lines[0])
+    the_source.index = lines[1].strip() if len(lines) > 1 else the_source.index
     for line in lines[2:]:
         parts = line.strip().split(None, 3)
         if not parts:
             continue
-        subname = slugify(parts[0])
-        unit = parts[1].strip() if len(parts) > 1 else ""
-        stype = parts[2].strip() if len(parts) > 2 else "float"
-        subs.append((subname, unit, stype))
-    return combined, None, index, None, None, None, None, subs
+        sub_source = the_source.parturate()
+        sub_source.name = slugify(parts[0])
+        sub_source.sourcetype.dateunit = parts[1].strip() if len(parts) > 1 else ""
+        sub_source.sourcetype.datatype = parts[2].strip() if len(parts) > 2 else "float"
+    return the_source
 
-def parse_interactive(do_override_uuids):
+def parse_interactive():
 
     print("################################################################################")
-    combined_name = slugify(input(
-        f"Enter {SourceType.DEFAULT_SUPER_TYPE} type name (empty to finish): ").strip())
-    if not combined_name:
-        return None, None, None, None, None, None, None, []
-    dev_type = input("Enter device-type (empty means autogenerate): ").strip()
-    index = input("Enter the source index ('-' to skip, [0000]): ").strip() or "0000"
-    type_displname = input(
+    name = input(
+        f"Enter {SourceType.DEFAULT_SUPER_TYPE} type name (empty to finish): "
+    ).strip()
+    if not name:
+        return None
+
+    # still here?
+    the_source = Source(SourceType())
+
+    disable_index = False
+    index = input(
+        f"Enter the source index ('-' to skip, [{the_source.index}]): "
+    ).strip()
+    if index == "-":
+        index = ""
+        disable_index = True
+    devtype = input(
+        "Enter device-type (empty means autogenerate): "
+    ).strip()
+    the_source.set_names(
+        name,
+        index,
+        disable_index,
+        devtype,
+    )
+
+    typedispln = input(
         "Enter type display name (empty to skip all display names): "
     ).strip()
-    if type_displname:
-        i = f"{type_displname} {index}" if index else type_displname
-        tmp = input(f"Enter source display name ([{i}]): ").strip()
-        source_displname = tmp if tmp else i
-    else:
-        type_displname = None
-        source_displname = None
-    if do_override_uuids:
-        combined_type_uuid = input(
-            "Enter sourcetype UUID (empty means autogenerate): "
+    if typedispln:
+        disable_dn = False
+        if the_source.index:
+            tmp = f"{typedispln} {the_source.index}"
+        tmpi = input(
+            f"Enter source display name ([{tmp}]): "
         ).strip()
-        combined_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
+        srcdispln = tmpi if tmpi else tmp
     else:
-        combined_type_uuid = None
-        combined_source_uuid = None
-    sub_sensors = []
+        disable_dn = True
+        typedispln = None
+        srcdispln = None
+    the_source.set_displaynames(
+        typedispln,
+        srcdispln,
+        disable_dn,
+        lang="en",
+    )
+
+    tmpuuid = str(uuid.uuid4())
+    the_source.sourcetype.uuid = input(
+        f"Enter sourcetype UUID (['{tmpuuid}']): "
+    ).strip() or tmpuuid
+    tmpuuid = str(uuid.uuid4())
+    the_source.uuid = input(
+        f"Enter source UUID (['{tmpuuid}']): "
+    ).strip() or tmpuuid
+
     subcount = 0
     while True:
-        print(f"=== {subcount} ===")
+        print(f"================= {name}::{subcount} ======================")
         sub_in = input(
-            f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): ").strip()
+            f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): "
+        ).strip()
         if not sub_in:
             break
         sub_name = slugify(sub_in)
         sc = input(f"Enter a class name (['{SourceType.DEFAULT_SUB_TYPE}']): ").strip()
         sub_class = sc if sc else SourceType.DEFAULT_SUB_TYPE
         sub_dev_type = input("Enter device-type (empty means autogenerate): ").strip()
-        if do_override_uuids:
-            sub_type_uuid = input("Enter sourcetype UUID (empty means autogenerate): ").strip()
-            sub_source_uuid = input("Enter source UUID (empty means autogenerate): ").strip()
-        else:
-            sub_type_uuid = None
-            sub_source_uuid = None
-        if type_displname:
+        tmpuuid = str(uuid.uuid4())
+        sub_type_uuid = input(
+            f"Enter sourcetype UUID (['{tmpuuid}']): "
+        ).strip()
+        tmpuuid = str(uuid.uuid4())
+        sub_source_uuid = input(
+            f"Enter source UUID (['{tmpuuid}']): "
+        ).strip()
+
+        if not disable_dn:
             sub_type_displname = input(
                 f"Enter sourcetype display name ([{sub_in}] if empty): "
             ).strip()
             sub_type_displname = sub_type_displname if sub_type_displname else sub_in
-            i = f"{sub_type_displname} {index}" if index else type_displname
+            i = f"{sub_type_displname} {the_source.index}" if the_source.index else type_displname
             sub_source_displname = input(
                 f"Enter source display name ([{i}]): "
             ).strip()
@@ -197,18 +422,9 @@ def parse_interactive(do_override_uuids):
         print("===")
         skipit = input("Please confirm the entry ([Y/n]): ").strip()
         if not skipit.lower() == "n":
-            sub_sensors.append(t)
+            sub_sensor = the_source.create_sub(*t)
             subcount += 1
-    return (
-        combined_name,
-        dev_type,
-        index,
-        combined_type_uuid,
-        combined_source_uuid,
-        type_displname,
-        source_displname,
-        sub_sensors
-    )
+    return the_source
 
 
 def parse_meta(level=0):
@@ -284,15 +500,15 @@ def produce_output(
         type_displname,
         source_displname,
         sub_sensors,
-        do_prepend_parent=False
+#        do_prepend_parent=False
     ):
     sources = []
     sourcetypes = []
-    mapping = {}
+#    mapping = {}
 
     # Combined sensor
-    st_combined_uuid = combined_type_uuid if combined_type_uuid else gen_uuid()
-    src_combined_uuid = combined_source_uuid if combined_source_uuid else gen_uuid()
+    st_combined_uuid = combined_type_uuid #if combined_type_uuid else gen_uuid()
+    src_combined_uuid = combined_source_uuid #if combined_source_uuid else gen_uuid()
 
     indexs = "" if index == "-" else f"-{index}"
     tmp = {
@@ -331,9 +547,10 @@ def produce_output(
         sub_type_meta,
         sub_source_meta
     ) in sub_sensors:
-        st_uuid = sub_type_uuid if sub_type_uuid else gen_uuid()
-        src_uuid = sub_uuid if sub_uuid else gen_uuid()
-        src_name = f"{combined_name}{indexs}-{sub_name}" if do_prepend_parent else sub_name
+        st_uuid = sub_type_uuid # if sub_type_uuid else gen_uuid()
+        src_uuid = sub_uuid # if sub_uuid else gen_uuid()
+#        src_name = f"{combined_name}{indexs}-{sub_name}" if do_prepend_parent else sub_name
+        src_name = sub_name
 
         if sub_type_displname:
             # TODO only "en" currently supported and no way to turn the input question off
@@ -364,7 +581,7 @@ def produce_output(
         if sub_type_meta:
             tmp["meta"] = quote_textlike(sub_type_meta)
         sourcetypes.append(tmp)
-        mapping[sub_name] = src_uuid
+#        mapping[sub_name] = src_uuid
 
     print("\n--- YAML output for 'Sources' ---")
     source_yaml = yaml.dump(
@@ -400,15 +617,15 @@ def main():
         global ucum_registry
         ucum_registry = get_units_registry()
 
-        do_prepend_parent = False
-        o = input("Autogenerate all UUIDs? ([Y/n]): ").strip()
-        if o.lower() == "n":
-            do_override_uuids = True
-        else:
-            do_override_uuids = False
-        d = input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip()
-        if d.lower() == "y":
-            do_prepend_parent = True
+#        do_prepend_parent = False
+#        o = input("Autogenerate all UUIDs? ([Y/n]): ").strip()
+#        if o.lower() == "n":
+#            do_override_uuids = True
+#        else:
+#            do_override_uuids = False
+#        d = input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip()
+#        if d.lower() == "y":
+#            do_prepend_parent = True
         parse = parse_interactive
 
     sensor_libs = []
@@ -420,34 +637,55 @@ def main():
 
     do_continue = True
     while do_continue:
-        (
-            combined_name,
-            dev_type,
-            index,
-            tuuid,
-            suuid,
-            tdname,
-            sdname,
-            sub_sensors
-        ) = parse(do_override_uuids)
-        if not combined_name:
+        a_source = parse()
+        if not a_source:
             do_continue = False
         else:
-            sensor_libs.append([
-                combined_name,
-                dev_type,
-                index,
-                tuuid,
-                suuid,
-                tdname,
-                sdname,
-                sub_sensors
-            ])
+            sensor_libs.append(a_source)
 
     # from here on, replace `None` resp. `null` with ``
     def none_representer(dumper, _):
         return dumper.represent_scalar('tag:yaml.org,2002:null', '', style=None)
     yaml.add_representer(type(None), none_representer)
+
+    container = {
+        "sources": {},
+        "sourcetypes": {},
+    }
+
+    for l in sensor_libs:
+#        print(l.name)
+#        for m in l.sub_sources:
+#            print(m.name)
+        l.serialize_deep(container)
+
+    #print(container)
+
+    if "sources" in container and "sourcetypes" in container:
+
+        print("\n--- YAML output for 'Sources' ---")
+        source_yaml = yaml.dump(
+            list(container["sources"].values()),
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=True,
+            width=80,
+        )
+        print("".join(Source.LEADING_SPACES + line for line in source_yaml.splitlines(True)))
+        print("\n--- YAML output for 'SourceTypes' ---")
+        sourcetypes_yaml = yaml.dump(
+            list(container["sourcetypes"].values()),
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=True,
+            width=80,
+        )
+        print(
+            "".join(SourceType.LEADING_SPACES +
+            line for line in sourcetypes_yaml.splitlines(True))
+        )
+
+    sys.exit(0)
 
     for s in sensor_libs:
         combined_name = s[0]
@@ -467,7 +705,7 @@ def main():
             tdname,
             sdname,
             sub_sensors,
-            do_prepend_parent
+#            do_prepend_parent
         )
 
 
