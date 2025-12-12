@@ -57,7 +57,7 @@ class SourceType():
         if not self.uuid:
             self.uuid = str(uuid.uuid4())
 
-    def serialize(self):
+    def serialize_parameters(self):
         self.auto_fill()
         o = {
             "name": self.name,
@@ -100,6 +100,7 @@ class Source():
         sourcetype_name,
         index=None,
         disable_index=False,
+        classname=None,
         devicetype=None,
     ):
         sourcetype_name = slugify(sourcetype_name)
@@ -115,14 +116,10 @@ class Source():
             self.index = index
             self.name = sourcetype_name + "_" + index
 
-        if devicetype:
-            self.sourcetype.devicetype = devicetype
-        else:
-            self.sourcetype.devicetype = sourcetype_name
+        self.sourcetype.classname = classname or SourceType.DEFAULT_SUPER_TYPE
 
+        self.sourcetype.devicetype = devicetype or sourcetype_name
 
-    def set_displayname(self, name, lang="en"):
-        self.meta["displayname"] = { lang: name }
 
     def set_displaynames(
         self,
@@ -150,34 +147,8 @@ class Source():
         self.sub_sources.append(s)
         return s
 
-    # shortcut for now..
-    def create_sub(
-        self,
-        sub_name,
-        sub_class,
-        sub_type_uuid,
-        sub_source_uuid,
-        sub_type_displayname,
-        sub_source_displayname,
-        sub_dev_type,
-        dataunit,
-        datatype,
-        sub_type_meta,
-        sub_source_meta
-    ):
-        s = self.parturate()
-        s.name = sub_name
-        s.sourcetype.name = sub_name
-        s.sourcetype.classname = sub_class
-        s.sourcetype.uuid = sub_type_uuid
-        s.uuid = sub_source_uuid
-        s.sourcetype.meta["displayname"]["en"] = sub_type_displayname
-        s.meta["displayname"]["en"] = sub_source_displayname
-        s.sourcetype.devicetype = sub_dev_type
-        s.sourcetype.dataunit = dataunit
-        s.sourcetype.datatype = datatype
-        s.meta = sub_source_meta
-        return s
+    def adopt(self, childsource):
+        self.sub_sources.append(childsource)
 
     def auto_fill(self):
         if not self.uuid:
@@ -223,7 +194,7 @@ class Source():
             print("WARNING: Duplicate Source entry found, last one takes precedence: {self.uuid}")
         container["sources"][self.uuid] = self.serialize_parameters()
         if not self.sourcetype.uuid in container["sourcetypes"]:
-            container["sourcetypes"][self.sourcetype.uuid] = self.sourcetype.serialize()
+            container["sourcetypes"][self.sourcetype.uuid] = self.sourcetype.serialize_parameters()
 
         for s in self.sub_sources:
             s.serialize_deep(container, depth)
@@ -293,6 +264,7 @@ def parse_stdin():
 
 def parse_interactive():
 
+    print()
     print("################################################################################")
     name = input(
         f"Enter {SourceType.DEFAULT_SUPER_TYPE} type name (empty to finish): "
@@ -317,6 +289,7 @@ def parse_interactive():
         name,
         index,
         disable_index,
+        SourceType.DEFAULT_SUPER_TYPE,
         devtype,
     )
 
@@ -353,16 +326,58 @@ def parse_interactive():
 
     subcount = 0
     while True:
-        print(f"================= {name}::{subcount} ======================")
-        sub_in = input(
+        print("")
+        print(f"========================= {name}::{subcount} ===-------===================")
+        sub_name = input(
             f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): "
         ).strip()
-        if not sub_in:
+        if not sub_name:
             break
-        sub_name = slugify(sub_in)
-        sc = input(f"Enter a class name (['{SourceType.DEFAULT_SUB_TYPE}']): ").strip()
-        sub_class = sc if sc else SourceType.DEFAULT_SUB_TYPE
-        sub_dev_type = input("Enter device-type (empty means autogenerate): ").strip()
+
+        # still here?
+#        the_child = the_source.parturate()
+        the_child = Source(SourceType())
+
+        # names
+        sub_index = input(
+            f"Enter the sub-sensor index ([''])"
+        ).strip()
+        sub_dis_index = False if sub_index else True
+        sub_class = input(
+            f"Enter a class name (['{SourceType.DEFAULT_SUB_TYPE}']): "
+        ).strip() or SourceType.DEFAULT_SUB_TYPE
+        sub_dev_type = input(
+            "Enter device-type (empty means autogenerate): "
+        ).strip()
+
+        the_child.set_names(
+            sub_name, sub_index, sub_dis_index, sub_class, sub_dev_type
+        )
+
+        #TODO repeat for all languages
+        if not disable_dn:
+            sub_tdisplname = input(
+                f"Enter sourcetype display name ([{sub_name}] if empty): "
+            ).strip() or sub_name
+            if sub_index:
+                i = f"{sub_tdisplname} {sub_index}"
+            elif the_source.index:
+                i = f"{sub_tdisplname} {the_source.index}"
+            else:
+                type_displname
+            sub_sdisplname = input(
+                f"Enter source display name ([{i}]): "
+            ).strip() or i
+            the_child.set_displaynames(
+                sub_tdisplname, sub_sdisplname, False, "en"
+            )
+        else:
+            sub_tdisplname = None
+            sub_sdisplname = None
+            the_child.set_displaynames(disable_displaynames=True)
+
+
+        print("---")
         tmpuuid = str(uuid.uuid4())
         sub_type_uuid = input(
             f"Enter sourcetype UUID (['{tmpuuid}']): "
@@ -372,48 +387,37 @@ def parse_interactive():
             f"Enter source UUID (['{tmpuuid}']): "
         ).strip()
 
-        if not disable_dn:
-            sub_type_displname = input(
-                f"Enter sourcetype display name ([{sub_in}] if empty): "
-            ).strip()
-            sub_type_displname = sub_type_displname if sub_type_displname else sub_in
-            i = f"{sub_type_displname} {the_source.index}" if the_source.index else type_displname
-            sub_source_displname = input(
-                f"Enter source display name ([{i}]): "
-            ).strip()
-            sub_source_displname = sub_source_displname if sub_source_displname else i
-        else:
-            sub_type_displname = None
-            sub_source_displname = None
         print("---")
         if ucum_registry:
             qk = search_ucum(sub_name, sub_dev_type)
-            unit = qk["default_unit"]
-            sub_type_meta = {}
-            sub_type_meta["quantity_kind"] = qk
-            sub_type_meta["uncertainty"] = {}
+            the_child.sourcetype.dataunit = qk["default_unit"]
+            the_child.sourcetype.meta["quantity_kind"] = qk
+            the_child.sourcetype.meta["uncertainty"] = {}
         else:
-            unit = input(f"Enter unit for '{sub_name}' ['m']: ").strip()
+            the_child.sourcetype.dataunit = input(
+                f"Enter unit for '{sub_name}' ['m']: "
+            ).strip()
+
         print("---")
-        stype = input(f"Enter type for '{sub_name}' (default float): ").strip() or "float"
+        the_child.sourcetype.datatype = input(
+            f"Enter type for '{sub_name}' (default float): "
+        ).strip() or "float"
+
         print("---")
-        sub_source_meta = parse_meta()
-        print("===")
-        t = (
-            sub_name,
-            sub_class,
-            sub_type_uuid,
-            sub_source_uuid,
-            sub_type_displname,
-            sub_source_displname,
-            sub_dev_type,
-            unit,
-            stype,
-            sub_type_meta,
-            sub_source_meta
-        )
+        for k, v in parse_meta().items():
+            the_child.meta[k] = v
+        print()
+        print("=== SourceType ===")
         print(yaml.dump(
-            list(t),
+            the_child.sourcetype.serialize_parameters(),
+            sort_keys=False,
+            default_flow_style=False,
+            allow_unicode=True,
+            width=80,
+        ))
+        print("=== Source ===")
+        print(yaml.dump(
+            the_child.serialize_parameters(),
             sort_keys=False,
             default_flow_style=False,
             allow_unicode=True,
@@ -422,7 +426,7 @@ def parse_interactive():
         print("===")
         skipit = input("Please confirm the entry ([Y/n]): ").strip()
         if not skipit.lower() == "n":
-            sub_sensor = the_source.create_sub(*t)
+            the_source.adopt(the_child)
             subcount += 1
     return the_source
 
@@ -491,119 +495,18 @@ def quote_textlike(obj, depth=None):
     return obj
 
 
-def produce_output(
-        combined_name,
-        dev_type,
-        index,
-        combined_type_uuid,
-        combined_source_uuid,
-        type_displname,
-        source_displname,
-        sub_sensors,
-#        do_prepend_parent=False
-    ):
-    sources = []
-    sourcetypes = []
-#    mapping = {}
+# TODO quoting
 
-    # Combined sensor
-    st_combined_uuid = combined_type_uuid #if combined_type_uuid else gen_uuid()
-    src_combined_uuid = combined_source_uuid #if combined_source_uuid else gen_uuid()
-
-    indexs = "" if index == "-" else f"-{index}"
-    tmp = {
-        "uuid": q(src_combined_uuid),
-        "name": q(f"{combined_name}{indexs}"),
-        "parentname": q(""),
-        "parentuuid": q(""),
-        "typeuuid": q(st_combined_uuid),
-    }
-    if source_displname:
-        tmp["meta"] = { "displayname": { "en": quote_textlike(source_displname) } }
-    sources.append(tmp)
-    tmp = {
-        "uuid": q(st_combined_uuid),
-        "name": q(combined_name),
-        "class": q(SourceType.DEFAULT_SUPER_TYPE),
-        "devicetype": q(dev_type),
-        "type": None,
-        "unit": None,
-    }
-    if type_displname:
-        tmp["meta"] = { "displayname": { "en": quote_textlike(type_displname) } }
-    sourcetypes.append(tmp)
-
-    # Sub-sensors
-    for (
-        sub_name,
-        sub_class,
-        sub_type_uuid,
-        sub_uuid,
-        sub_type_displname,
-        sub_source_displname,
-        sub_dev_type,
-        unit,
-        stype,
-        sub_type_meta,
-        sub_source_meta
-    ) in sub_sensors:
-        st_uuid = sub_type_uuid # if sub_type_uuid else gen_uuid()
-        src_uuid = sub_uuid # if sub_uuid else gen_uuid()
-#        src_name = f"{combined_name}{indexs}-{sub_name}" if do_prepend_parent else sub_name
-        src_name = sub_name
-
-        if sub_type_displname:
-            # TODO only "en" currently supported and no way to turn the input question off
-            sub_source_meta["displayname"] = { "en": sub_source_displname }
-            sub_type_meta["displayname"] = { "en": sub_type_displname }
-        dt = sub_dev_type if sub_dev_type else f"{combined_name}-{sub_name}"
-
-        #TODO: in non-interacte we might want to limit the depth of quote_textlike()..!?
-        tmp = {
-            "uuid": q(src_uuid),
-            "name": q(src_name),
-            "parentname": q(f"{combined_name}{indexs}"),
-            "parentuuid": q(src_combined_uuid),
-            "typeuuid": q(st_uuid),
-        }
-        if sub_source_meta:
-            tmp["meta"] = quote_textlike(sub_source_meta)
-        sources.append(tmp)
-        tmp = {
-            "uuid": q(st_uuid),
-            "name": q(f"{combined_name}-{sub_name}"),
-            "class": q(sub_class),
-            "devicetype": q(dt),
-            "type": stype,  # bare literal
-            "unit": q(unit),
-            "unitencoding": q("meta:quantity_kind")
-        }
-        if sub_type_meta:
-            tmp["meta"] = quote_textlike(sub_type_meta)
-        sourcetypes.append(tmp)
-#        mapping[sub_name] = src_uuid
-
-    print("\n--- YAML output for 'Sources' ---")
-    source_yaml = yaml.dump(
-        sources,
-        sort_keys=False,
-        default_flow_style=False,
-        allow_unicode=True,
-        width=80,
-    )
-    print("".join(Source.LEADING_SPACES + line for line in source_yaml.splitlines(True)))
-    print("\n--- YAML output for 'SourceTypes' ---")
-    sourcetypes_yaml = yaml.dump(
-        sourcetypes,
-        sort_keys=False,
-        default_flow_style=False,
-        allow_unicode=True,
-        width=80,
-    )
-    print(
-        "".join(SourceType.LEADING_SPACES +
-        line for line in sourcetypes_yaml.splitlines(True))
-    )
+#           tmp["meta"] = quote_textlike(sub_source_meta)
+#        tmp = {
+#            "uuid": q(st_uuid),
+#            "name": q(f"{combined_name}-{sub_name}"),
+#            "class": q(sub_class),
+#            "devicetype": q(dt),
+#            "type": stype,  # bare literal
+#            "unit": q(unit),
+#            "unitencoding": q("meta:quantity_kind")
+#        }
 
 
 def main():
@@ -617,15 +520,6 @@ def main():
         global ucum_registry
         ucum_registry = get_units_registry()
 
-#        do_prepend_parent = False
-#        o = input("Autogenerate all UUIDs? ([Y/n]): ").strip()
-#        if o.lower() == "n":
-#            do_override_uuids = True
-#        else:
-#            do_override_uuids = False
-#        d = input("Prepend parent name and index to the source sub-name? ([y/N]): ").strip()
-#        if d.lower() == "y":
-#            do_prepend_parent = True
         parse = parse_interactive
 
     sensor_libs = []
@@ -654,12 +548,7 @@ def main():
     }
 
     for l in sensor_libs:
-#        print(l.name)
-#        for m in l.sub_sources:
-#            print(m.name)
         l.serialize_deep(container)
-
-    #print(container)
 
     if "sources" in container and "sourcetypes" in container:
 
@@ -684,30 +573,6 @@ def main():
             "".join(SourceType.LEADING_SPACES +
             line for line in sourcetypes_yaml.splitlines(True))
         )
-
-    sys.exit(0)
-
-    for s in sensor_libs:
-        combined_name = s[0]
-        dev_type = s[1]
-        index = s[2]
-        tuuid = s[3]
-        suuid = s[4]
-        tdname = s[5]
-        sdname = s[6]
-        sub_sensors = s[7]
-        produce_output(
-            combined_name,
-            dev_type,
-            index,
-            tuuid,
-            suuid,
-            tdname,
-            sdname,
-            sub_sensors,
-#            do_prepend_parent
-        )
-
 
 
 if __name__ == "__main__":
