@@ -149,6 +149,7 @@ class Source():
 
     def adopt(self, childsource):
         self.sub_sources.append(childsource)
+        childsource.parentsource = self
 
     def auto_fill(self):
         if not self.uuid:
@@ -166,6 +167,7 @@ class Source():
             "uuid": self.uuid,
             "typeuuid": self.sourcetype.uuid if self.sourcetype else None,
             "parentuuid": self.parentsource.uuid if self.parentsource else None,
+            "parentname": self.parentsource.name if self.parentsource else None,
             "meta": self.meta,
         }
         return quote_textlike(o)
