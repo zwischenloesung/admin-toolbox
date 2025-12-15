@@ -123,14 +123,18 @@ class Source():
 
     def set_displaynames(
         self,
+        disable_displaynames=False,
         sourcetype_displayname=None,
         source_displayname=None,
-        disable_displaynames=False,
+        sourcetype_tooltip=None,
+        source_tooltip=None,
         lang="en",
     ):
         if disable_displaynames:
             self.meta["displayname"] = { lang: "" }
             self.sourcetype.meta["displayname"] = { lang: "" }
+            self.meta["tooltip"] = { lang: "" }
+            self.sourcetype.meta["tooltip"] = { lang: "" }
         else:
             if sourcetype_displayname:
                 self.sourcetype.meta["displayname"] = {
@@ -139,6 +143,14 @@ class Source():
             if source_displayname:
                 self.meta["displayname"] = {
                     lang: source_displayname
+                }
+            if sourcetype_tooltip:
+                self.sourcetype.meta["tooltip"] = {
+                    lang: sourcetype_tooltip
+                }
+            if source_tooltip:
+                self.meta["tooltip"] = {
+                    lang: source_tooltip
                 }
 
 
@@ -306,14 +318,24 @@ def parse_interactive():
             f"Enter source display name ([{tmp}]): "
         ).strip()
         srcdispln = tmpi if tmpi else tmp
+        typettip = input(
+            "Enter tooltip for sourcetype (empty to skip []): "
+        )
+        srcttip = input(
+            f"Enter tooltip for source ([{typettip}]): "
+        ) or typettip
     else:
         disable_dn = True
         typedispln = None
         srcdispln = None
+        typettip = None
+        srcttip = None
     the_source.set_displaynames(
+        disable_dn,
         typedispln,
         srcdispln,
-        disable_dn,
+        typettip,
+        srcttip,
         lang="en",
     )
 
@@ -342,7 +364,7 @@ def parse_interactive():
 
         # names
         sub_index = input(
-            f"Enter the sub-sensor index ([''])"
+            f"Enter the sub-sensor index (['']) "
         ).strip()
         sub_dis_index = False if sub_index else True
         sub_class = input(
@@ -370,8 +392,19 @@ def parse_interactive():
             sub_sdisplname = input(
                 f"Enter source display name ([{i}]): "
             ).strip() or i
+            sub_tttip = input(
+                "Enter sourcetype tooltip ([]): "
+            )
+            sub_sttip = input(
+                f"Enter source tooltip ([{sub_tttip}]): "
+            )
             the_child.set_displaynames(
-                sub_tdisplname, sub_sdisplname, False, "en"
+                False,
+                sub_tdisplname,
+                sub_sdisplname,
+                sub_tttip,
+                sub_sttip,
+                "en"
             )
         else:
             sub_tdisplname = None
@@ -426,7 +459,7 @@ def parse_interactive():
             width=80,
         ))
         print("===")
-        skipit = input("Please confirm the entry ([Y/n]): ").strip()
+        skipit = input("Please confirm the entry (parent is set automatically [Y/n]): ").strip()
         if not skipit.lower() == "n":
             the_source.adopt(the_child)
             subcount += 1
