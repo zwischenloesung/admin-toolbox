@@ -69,7 +69,7 @@ class SourceType():
             "unitencoding": self.dataunitencoding,
             "meta": self.meta,
         }
-        return o
+        return quote_textlike(o)
 
 
 
@@ -168,7 +168,7 @@ class Source():
             "parentuuid": self.parentsource.uuid if self.parentsource else None,
             "meta": self.meta,
         }
-        return o
+        return quote_textlike(o)
 
     def serialize_deep(self, container=None, depth=None):
         if depth == None:
@@ -327,7 +327,7 @@ def parse_interactive():
     subcount = 0
     while True:
         print("")
-        print(f"========================= {name}::{subcount} ===-------===================")
+        print(f"========================= {name}::{subcount} =============================")
         sub_name = input(
             f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): "
         ).strip()
