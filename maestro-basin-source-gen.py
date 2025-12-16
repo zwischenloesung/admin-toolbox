@@ -25,6 +25,21 @@ class Quoted(str): pass
 #a global function to mark resp. strings
 def q(s): return Quoted(str(s))
 
+# some font tweaks
+def supports_color():
+    return os.isatty(sys.stdout.fileno())
+COLOR_RESET = "\033[0m" if supports_color() else ""
+COLOR_WHITE_BOLD = "\033[1;39m" if supports_color() else ""
+#COLOR_GREEN = "\033[32m" if supports_color() else ""
+COLOR_GREEN_BOLD = "\033[1;32m" if supports_color() else ""
+COLOR_YELLOW = "\033[33m" if supports_color() else ""
+COLOR_YELLOW_BOLD = "\033[1;33m" if supports_color() else ""
+#COLOR_RED = "\033[31m" if supports_color() else ""
+COLOR_RED_BOLD = "\033[1;31m" if supports_color() else ""
+COLOR_CYAN = "\033[36m" if supports_color() else ""
+COLOR_CYAN_BOLD = "\033[1;36m" if supports_color() else ""
+COLOR_MAGENTA = "\033[35m" if supports_color() else ""
+COLOR_MAGENTA_BOLD = "\033[1;35m" if supports_color() else ""
 
 class SourceType():
     # Configurable indent prefix
@@ -75,7 +90,7 @@ class SourceType():
 
 class Source():
     # Configurable indent prefix
-    LEADING_SPACES = "      "  # 6 spaces
+    LEADING_SPACES = "        "  # 8 spaces
 
     def __init__(self, sourcetype: SourceType, parentsource=None):
         self.uuid = None
@@ -279,9 +294,14 @@ def parse_stdin():
 def parse_interactive():
 
     print()
-    print("################################################################################")
+    print(
+        "########################" + \
+        f"{COLOR_MAGENTA_BOLD} New {SourceType.DEFAULT_SUPER_TYPE} " + \
+        f"{COLOR_RESET}########################"
+    )
     name = input(
-        f"Enter {SourceType.DEFAULT_SUPER_TYPE} type name (empty to finish): "
+        f"Enter {SourceType.DEFAULT_SUPER_TYPE} type {COLOR_CYAN}" + \
+        f"name{COLOR_RESET} (empty to finish): "
     ).strip()
     if not name:
         return None
@@ -291,13 +311,15 @@ def parse_interactive():
 
     disable_index = False
     index = input(
-        f"Enter the source index ('-' to skip, [{the_source.index}]): "
+        f"Enter the source {COLOR_CYAN}index{COLOR_RESET}" + \
+        f"('-' to skip, [{the_source.index}]): "
     ).strip()
     if index == "-":
         index = ""
         disable_index = True
     devtype = input(
-        "Enter device-type (empty means autogenerate): "
+        f"Enter {COLOR_CYAN}device-type{COLOR_RESET} " + \
+        "(empty means autogenerate): "
     ).strip()
     the_source.set_names(
         name,
@@ -307,8 +329,9 @@ def parse_interactive():
         devtype,
     )
 
+    print(f"--- {COLOR_CYAN}Display Names{COLOR_RESET} ---")
     typedispln = input(
-        "Enter type display name (empty to skip all display names): "
+        f"Enter sourcetype display name (empty to skip all display names): "
     ).strip()
     if typedispln:
         disable_dn = False
@@ -339,6 +362,7 @@ def parse_interactive():
         lang="en",
     )
 
+    print(f"--- {COLOR_CYAN}UUID{COLOR_RESET} ---")
     tmpuuid = str(uuid.uuid4())
     the_source.sourcetype.uuid = input(
         f"Enter sourcetype UUID (['{tmpuuid}']): "
@@ -351,9 +375,12 @@ def parse_interactive():
     subcount = 0
     while True:
         print("")
-        print(f"========================= {name}::{subcount} =============================")
+        print(
+            f"======================= {COLOR_MAGENTA}{name}::{subcount} " + \
+            f"{COLOR_RESET}===========================")
         sub_name = input(
-            f"Enter sub-sensor name (empty to end this {SourceType.DEFAULT_SUPER_TYPE}): "
+            f"Enter sub-sensor {COLOR_CYAN}name{COLOR_RESET} " + \
+            f"(empty to end this {SourceType.DEFAULT_SUPER_TYPE}): "
         ).strip()
         if not sub_name:
             break
@@ -364,14 +391,16 @@ def parse_interactive():
 
         # names
         sub_index = input(
-            f"Enter the sub-sensor index (['']) "
+            f"Enter the sub-sensor {COLOR_CYAN}index{COLOR_RESET} (['']) "
         ).strip()
         sub_dis_index = False if sub_index else True
         sub_class = input(
-            f"Enter a class name (['{SourceType.DEFAULT_SUB_TYPE}']): "
+            f"Enter a {COLOR_CYAN}class name{COLOR_RESET} " + \
+            f"(['{SourceType.DEFAULT_SUB_TYPE}']): "
         ).strip() or SourceType.DEFAULT_SUB_TYPE
         sub_dev_type = input(
-            "Enter device-type (empty means autogenerate): "
+            f"Enter {COLOR_CYAN}device-type{COLOR_RESET} " + \
+            "(empty means autogenerate): "
         ).strip()
 
         the_child.set_names(
@@ -380,6 +409,9 @@ def parse_interactive():
 
         #TODO repeat for all languages
         if not disable_dn:
+            print(
+                f"--- {COLOR_CYAN}Display Names{COLOR_RESET} ---"
+            )
             sub_tdisplname = input(
                 f"Enter sourcetype display name ([{sub_name}] if empty): "
             ).strip() or sub_name
@@ -412,7 +444,9 @@ def parse_interactive():
             the_child.set_displaynames(disable_displaynames=True)
 
 
-        print("---")
+        print(
+            f"--- {COLOR_CYAN}UUID{COLOR_RESET} ---"
+        )
         tmpuuid = str(uuid.uuid4())
         sub_type_uuid = input(
             f"Enter sourcetype UUID (['{tmpuuid}']): "
@@ -422,7 +456,7 @@ def parse_interactive():
             f"Enter source UUID (['{tmpuuid}']): "
         ).strip()
 
-        print("---")
+        print(f"--- {COLOR_CYAN}Unit{COLOR_RESET} ---")
         if ucum_registry:
             qk = search_ucum(sub_name, sub_dev_type)
             the_child.sourcetype.dataunit = qk["default_unit"]
@@ -430,19 +464,19 @@ def parse_interactive():
             the_child.sourcetype.meta["uncertainty"] = {}
         else:
             the_child.sourcetype.dataunit = input(
-                f"Enter unit for '{sub_name}' ['m']: "
+                f"Enter {COLOR_CYAN}unit{COLOR_RESET} for '{sub_name}' ['m']: "
             ).strip()
 
-        print("---")
+        print(f"--- {COLOR_CYAN}Type{COLOR_RESET} ---")
         the_child.sourcetype.datatype = input(
             f"Enter type for '{sub_name}' (default float): "
         ).strip() or "float"
 
-        print("---")
+        print(f"--- {COLOR_CYAN}Meta{COLOR_RESET} ---")
         for k, v in parse_meta().items():
             the_child.meta[k] = v
         print()
-        print("=== SourceType ===")
+        print(f"=== {COLOR_MAGENTA}SourceType{COLOR_RESET} ===")
         print(yaml.dump(
             the_child.sourcetype.serialize_parameters(),
             sort_keys=False,
@@ -450,7 +484,7 @@ def parse_interactive():
             allow_unicode=True,
             width=80,
         ))
-        print("=== Source ===")
+        print(f"=== {COLOR_MAGENTA}Source{COLOR_RESET} ===")
         print(yaml.dump(
             the_child.serialize_parameters(),
             sort_keys=False,
@@ -458,8 +492,11 @@ def parse_interactive():
             allow_unicode=True,
             width=80,
         ))
-        print("===")
-        skipit = input("Please confirm the entry (parent is set automatically [Y/n]): ").strip()
+        print("=== --- ===")
+        skipit = input(
+            f"{COLOR_CYAN_BOLD}Please confirm the entry{COLOR_RESET} " + \
+            f"(parent is set automatically [Y/n]): "
+        ).strip()
         if not skipit.lower() == "n":
             the_source.adopt(the_child)
             subcount += 1
@@ -472,11 +509,15 @@ def parse_meta(level=0):
     while hasMeta:
         if not meta:
             m = input(
-                f"Enter meta JSON Level{level} (empty to skip, a key or JSON): "
+                f"Enter {COLOR_WHITE_BOLD}meta JSON Level{level}" + \
+                f"{COLOR_RESET} (empty to skip, a " + \
+                f"{COLOR_CYAN}key{COLOR_RESET} or JSON): "
             ).strip()
         else:
             m = input(
-                f"Enter meta JSON Level{level} (empty to skip or the next key): "
+                f"Enter {COLOR_WHITE_BOLD}meta JSON Level{level}" + \
+                f"{COLOR_RESET} (empty to skip or the next " + \
+                f"{COLOR_CYAN}key{COLOR_RESET}): "
             ).strip()
         if not m:
             return meta
@@ -485,13 +526,21 @@ def parse_meta(level=0):
                 try:
                     m = json.loads(m)
                 except:
-                    input("WARNING/ERROR: Unable to parse JSON, please try again..")
+                    input(
+                        f"{COLOR_RED_BOLD}WARNING/ERROR: Unable to " + \
+                        f"parse JSON, please try again..{COLOR_RESET}"
+                    )
                 return m
             else:
-                input("WARNING/ERROR: JSON found but meta not empty, please try again..")
+                input(
+                    f"{COLOR_RED_BOLD}WARNING/ERROR: JSON found " + \
+                    f"but meta not empty, please try again..{COLOR_RESET}"
+                )
         else:
             v = input(
-                f"Now enter the value for '{m}' or leave empty to add sub-dict: "
+                f"Now enter the {COLOR_CYAN}value{COLOR_RESET} " + \
+                f"for '{COLOR_WHITE_BOLD}{m}{COLOR_RESET}' or " + \
+                f"leave empty to add {COLOR_CYAN}sub-dict{COLOR_RESET}: "
             ).strip()
             if v:
                 meta[m] = v
@@ -549,8 +598,25 @@ def main():
     if not sys.stdin.isatty():
         parse = parse_stdin
     else:
-        p = os.path.dirname(os.path.realpath(__file__)) + '/maestro-basin-source-gen.ucum.yaml'
-        pi = input(f"Enter path to units/meta file ([{p}]): ").strip()
+        print(
+            "########################################" + \
+            "########################################"
+        )
+        print(
+            COLOR_GREEN_BOLD + \
+            f"                             W e l c o m e !" + \
+            COLOR_RESET
+        )
+        print(
+            "########################################" + \
+            "########################################"
+        )
+        p = os.path.dirname(os.path.realpath(__file__)) + \
+            '/maestro-basin-source-gen.ucum.yaml'
+        pi = input(
+            "Enter path to " + COLOR_CYAN + \
+            "units/meta " + COLOR_RESET + f"file ([{p}]): "
+        ).strip()
         p = pi if pi else p
         global ucum_registry
         ucum_registry = get_units_registry()
@@ -587,7 +653,10 @@ def main():
 
     if "sources" in container and "sourcetypes" in container:
 
-        print("\n--- YAML output for 'Sources' ---")
+        print(
+            f"\n--- {COLOR_YELLOW}YAML output for " + \
+            f"{COLOR_YELLOW_BOLD}'Sources'{COLOR_RESET} ---"
+        )
         source_yaml = yaml.dump(
             list(container["sources"].values()),
             sort_keys=False,
@@ -596,7 +665,10 @@ def main():
             width=80,
         )
         print("".join(Source.LEADING_SPACES + line for line in source_yaml.splitlines(True)))
-        print("\n--- YAML output for 'SourceTypes' ---")
+        print(
+            f"\n--- {COLOR_YELLOW}YAML output for " + \
+            f"{COLOR_YELLOW_BOLD}'SourceTypes'{COLOR_RESET} ---"
+        )
         sourcetypes_yaml = yaml.dump(
             list(container["sourcetypes"].values()),
             sort_keys=False,
