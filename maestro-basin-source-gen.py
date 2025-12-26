@@ -61,10 +61,20 @@ class SourceType():
             'uncertainty': None,
             'quantity_kind': None,
             'displayname': {
-                'en': ""
+                'short': {
+                    'en': ""
+                },
+                'long': {
+                    'en': ""
+                }
             },
-            'tooltip': {
-                'en': ""
+            'description': {
+                'short': {
+                    'en': ""
+                },
+                'long': {
+                    'en': ""
+                }
             },
         }
 
@@ -103,10 +113,20 @@ class Source():
 
         self.meta = {
             'displayname': {
-                'en': ""
+                'short': {
+                    'en': ""
+                },
+                'long': {
+                    'en': ""
+                }
             },
-            'tooltip': {
-                'en': ""
+            'description': {
+                'short': {
+                    'en': ""
+                },
+                'long': {
+                    'en': ""
+                }
             },
         }
 
@@ -139,34 +159,64 @@ class Source():
     def set_displaynames(
         self,
         disable_displaynames=False,
-        sourcetype_displayname=None,
-        source_displayname=None,
-        sourcetype_tooltip=None,
-        source_tooltip=None,
+        sourcetype_displaynameshort=None,
+        sourcetype_displaynamelong=None,
+        source_displaynameshort=None,
+        source_displaynamelong=None,
+        sourcetype_descriptionshort=None,
+        sourcetype_descriptionlong=None,
+        source_descriptionshort=None,
+        source_descriptionlong=None,
         lang="en",
     ):
         if disable_displaynames:
-            self.meta["displayname"] = { lang: "" }
-            self.sourcetype.meta["displayname"] = { lang: "" }
-            self.meta["tooltip"] = { lang: "" }
-            self.sourcetype.meta["tooltip"] = { lang: "" }
+            self.meta["displayname"] = {
+                'short': {
+                    lang: ""
+                }, 'long': {
+                    lang: ""
+                }
+            }
+            self.sourcetype.meta["displayname"] = {
+                'short': {
+                    lang: ""
+                }, 'long': {
+                    lang: ""
+                }
+            }
+            self.meta["description"] = {
+                'short': {
+                    lang: ""
+                }, 'long': {
+                    lang: ""
+                }
+            }
+            self.sourcetype.meta["description"] = {
+                'short': {
+                    lang: ""
+                }, 'long': {
+                    lang: ""
+                }
+            }
         else:
-            if sourcetype_displayname:
-                self.sourcetype.meta["displayname"] = {
-                    lang: sourcetype_displayname
-                }
-            if source_displayname:
-                self.meta["displayname"] = {
-                    lang: source_displayname
-                }
-            if sourcetype_tooltip:
-                self.sourcetype.meta["tooltip"] = {
-                    lang: sourcetype_tooltip
-                }
-            if source_tooltip:
-                self.meta["tooltip"] = {
-                    lang: source_tooltip
-                }
+            if sourcetype_displaynameshort:
+                self.sourcetype.meta["displayname"]["short"][lang] = \
+                    sourcetype_displaynameshort
+            if sourcetype_displaynamelong:
+                self.sourcetype.meta["displayname"]["long"][lang] = \
+                    sourcetype_displaynamelong
+            if source_displaynameshort:
+                self.meta["displayname"]["short"][lang] = source_displaynameshort
+            if source_displaynamelong:
+                self.meta["displayname"]["long"][lang] = source_displaynamelong
+            if sourcetype_descriptionshort:
+                self.sourcetype.meta["description"]["short"][lang] = sourcetype_descriptionshort
+            if sourcetype_descriptionlong:
+                self.sourcetype.meta["description"]["long"][lang] = sourcetype_descriptionlong
+            if source_descriptionshort:
+                self.meta["description"]["short"][lang] = source_descriptionshort
+            if source_descriptionlong:
+                self.meta["description"]["long"][lang] = source_descriptionlong
 
 
     def parturate(self):
@@ -330,37 +380,59 @@ def parse_interactive():
     )
 
     print(f"--- {COLOR_CYAN}Display Names{COLOR_RESET} ---")
-    typedispln = input(
-        f"Enter sourcetype display name (empty to skip all display names): "
-    ).strip()
-    if typedispln:
+    dlangs = []
+    tdlangs = input(
+        "Enter the languages you plan to support " + \
+        "(separated by ';', empty to skip all display names): "
+    ).split(";")
+    for l in tdlangs: # Needed more than once
+        dlangs.append(l.strip())
+    for l in dlangs:
         disable_dn = False
-        if the_source.index:
-            tmp = f"{typedispln} {the_source.index}"
-        tmpi = input(
-            f"Enter source display name ([{tmp}]): "
-        ).strip()
-        srcdispln = tmpi if tmpi else tmp
-        typettip = input(
-            "Enter tooltip for sourcetype (empty to skip []): "
+        print(
+            f"_Language:_{COLOR_YELLOW_BOLD}{l}{COLOR_RESET}_"
         )
-        srcttip = input(
-            f"Enter tooltip for source ([{typettip}]): "
-        ) or typettip
-    else:
-        disable_dn = True
-        typedispln = None
-        srcdispln = None
-        typettip = None
-        srcttip = None
-    the_source.set_displaynames(
-        disable_dn,
-        typedispln,
-        srcdispln,
-        typettip,
-        srcttip,
-        lang="en",
-    )
+        typedisplns = input(
+            f"Enter short sourcetype display name: "
+        ).strip()
+        typedisplnl = input(
+            f"Enter long sourcetype display name: "
+        ).strip()
+        if the_source.index:
+            tmps = f"{typedisplns} {the_source.index}"
+            tmpl = f"{typedisplnl} {the_source.index}"
+        tmpi = input(
+            f"Enter source display name ([{tmps}]): "
+        ).strip()
+        srcdisplns = tmpi if tmpi else tmps
+        tmpi = input(
+            f"Enter source display name ([{tmpl}]): "
+        ).strip()
+        srcdisplnl = tmpi if tmpi else tmpl
+        typettips = input(
+            "Enter short description for sourcetype (empty to skip []): "
+        )
+        typettipl = input(
+            "Enter long description for sourcetype (empty to skip []): "
+        )
+        srcttips = input(
+            f"Enter short description for source ([{typettips}]): "
+        ) or typettips
+        srcttipl = input(
+            f"Enter long description for source ([{typettipl}]): "
+        ) or typettipl
+        the_source.set_displaynames(
+            disable_dn,
+            typedisplns,
+            typedisplnl,
+            srcdisplns,
+            srcdisplnl,
+            typettips,
+            typettipl,
+            srcttips,
+            srcttipl,
+            lang=l,
+        )
 
     print(f"--- {COLOR_CYAN}UUID{COLOR_RESET} ---")
     tmpuuid = str(uuid.uuid4())
@@ -407,42 +479,56 @@ def parse_interactive():
             sub_name, sub_index, sub_dis_index, sub_class, sub_dev_type
         )
 
-        #TODO repeat for all languages
-        if not disable_dn:
+        for l in dlangs:
             print(
-                f"--- {COLOR_CYAN}Display Names{COLOR_RESET} ---"
+                f"--- {COLOR_CYAN}Display Names " + \
+                f"{COLOR_YELLOW_BOLD}{l}{COLOR_RESET} ---"
             )
-            sub_tdisplname = input(
-                f"Enter sourcetype display name ([{sub_name}] if empty): "
+            sub_tdisplnames = input(
+                f"Enter short sourcetype display name ([{sub_name}] if empty): "
+            ).strip() or sub_name
+            sub_tdisplnamel = input(
+                f"Enter long sourcetype display name ([{sub_name}] if empty): "
             ).strip() or sub_name
             if sub_index:
-                i = f"{sub_tdisplname} {sub_index}"
+                ishort = f"{sub_tdisplnames} {sub_index}"
+                ilong = f"{sub_tdisplnamel} {sub_index}"
             elif the_source.index:
-                i = f"{sub_tdisplname} {the_source.index}"
+                ishort = f"{sub_tdisplnames} {the_source.index}"
+                ilong = f"{sub_tdisplnamel} {the_source.index}"
             else:
-                type_displname
-            sub_sdisplname = input(
-                f"Enter source display name ([{i}]): "
-            ).strip() or i
-            sub_tttip = input(
-                "Enter sourcetype tooltip ([]): "
+                ishort = sub_tdisplnames
+                ilong = sub_tdisplnamel
+            sub_sdisplnames = input(
+                f"Enter short source display name ([{ishort}]): "
+            ).strip() or ishort
+            sub_sdisplnamel = input(
+                f"Enter long source display name ([{ilong}]): "
+            ).strip() or ilong
+            sub_tttips = input(
+                "Enter short sourcetype description ([]): "
             )
-            sub_sttip = input(
-                f"Enter source tooltip ([{sub_tttip}]): "
+            sub_tttipl = input(
+                "Enter long sourcetype description ([]): "
             )
+            sub_sttips = input(
+                f"Enter short source description ([{sub_tttips}]): "
+            ) or sub_tttips
+            sub_sttipl = input(
+                f"Enter long source description ([{sub_tttipl}]): "
+            ) or sub_tttipl
             the_child.set_displaynames(
                 False,
-                sub_tdisplname,
-                sub_sdisplname,
-                sub_tttip,
-                sub_sttip,
-                "en"
+                sub_tdisplnames,
+                sub_tdisplnamel,
+                sub_sdisplnames,
+                sub_sdisplnamel,
+                sub_tttips,
+                sub_tttipl,
+                sub_sttips,
+                sub_sttipl,
+                l
             )
-        else:
-            sub_tdisplname = None
-            sub_sdisplname = None
-            the_child.set_displaynames(disable_displaynames=True)
-
 
         print(
             f"--- {COLOR_CYAN}UUID{COLOR_RESET} ---"
