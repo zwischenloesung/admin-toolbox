@@ -73,16 +73,31 @@ quantity_kinds:
       - "aquatic"
       - "environment"
 
-  turbidity:
+  turbidity_spectral_equivalent:
     label: "Turbidity"
+    symbol: "FTUeq"
+    default_unit: "FTUeq"
+    method: "Proprietary"
+    prefered_alternative: 'FNU'
+    uri: "http://qudt.org/vocab/quantitykind/Turbidity"
+    aliases:
+      - "turbidity"
+      - "ftu"
+      - "ftueq"
+    tags:
+      - "water"
+      - "aquatic"
+      - "environment"
+
+  turbidity_nephelometric:
+    label: "Nephelometric turbidity"
     symbol: "FNU"
     default_unit: "FNU"
+    method: "ISO 7027"
     uri: "http://qudt.org/vocab/quantitykind/Turbidity"
     aliases:
       - "turbidity"
       - "ntu"
-      - "ftu"
-      - "ftueq"
     tags:
       - "water"
       - "aquatic"
@@ -462,6 +477,7 @@ quantity_kinds:
     aliases:
       - "chlorophyll a"
       - "chl a"
+      - "chl_a"
       - "chla"
       - "chlorophyll_a"
     tags:
@@ -471,17 +487,16 @@ quantity_kinds:
       - "environment"
 
   chemical_oxygen_demand:
-    label: "Chemical Oxygen Demand"
+    label: "Chemical Oxygen Demand (unfiltered)"
     symbol: "mg/L"
     default_unit: "mg/L"
     uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
     aliases:
       - "cod"
+      - "codeq"
       - "chemical oxygen demand"
       - "chemicaloxigencemand"
-      - "chemicaloxigencemand_f"
       - "chemicaloxygendemand"
-      - "chemicaloxygendemand_f"
     tags:
       - "water"
       - "wastewater"
@@ -495,6 +510,7 @@ quantity_kinds:
     uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
     aliases:
       - "cod_f"
+      - "codfeq"
       - "chemical oxygen demand filtered"
       - "cod filtered"
       - "chemicaloxigencemand_f"
@@ -503,6 +519,21 @@ quantity_kinds:
       - "water"
       - "wastewater"
       - "chemistry"
+      - "environment"
+
+  dissolved_organic_carbon_equivalent:
+    label: "Dissolved Organic Carbon (equivalent)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "doc_eq"
+      - "doc eq"
+      - "dissolved organic carbon equivalent"
+    tags:
+      - "water"
+      - "carbon"
+      - "organic"
       - "environment"
 
   dissolved_organic_carbon:
@@ -519,6 +550,21 @@ quantity_kinds:
       - "organic"
       - "environment"
 
+  nitrate_concentration_equivalent:
+    label: "Nitrate Concentration (as NO₃⁻ equivalent)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "nitrate"
+      - "no3eq"
+      - "nitrate equivalent concentration"
+    tags:
+      - "water"
+      - "nutrients"
+      - "chemistry"
+      - "environment"
+
   nitrate_concentration:
     label: "Nitrate Concentration (as NO₃⁻)"
     symbol: "mg/L"
@@ -527,7 +573,6 @@ quantity_kinds:
     aliases:
       - "nitrate"
       - "no3"
-      - "no3eq"
       - "nitrate concentration"
     tags:
       - "water"
@@ -543,6 +588,20 @@ quantity_kinds:
     aliases:
       - "tss"
       - "total suspended solids"
+    tags:
+      - "water"
+      - "chemistry"
+      - "environment"
+
+  tss_mass_concentration_equivalent:
+    label: "Total Suspended Solids (equivalent)"
+    symbol: "mg/L"
+    default_unit: "mg/L"
+    uri: "http://qudt.org/vocab/quantitykind/MassConcentration"
+    aliases:
+      - "tss eq"
+      - "tss_eq"
+      - "total suspended solids equivalent"
     tags:
       - "water"
       - "chemistry"
