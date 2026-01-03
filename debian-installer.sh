@@ -225,7 +225,7 @@ get_checksums() {
     set +e
     $_gpg -v Release.sig ; retval=$?
     set -e
-    if [ $do_force -ne 0 ] ; then
+    if [ $do_force_gpg -ne 0 ] ; then
         if [ $retval -ne 0 ] ; then
             clean_tmp $tempdir
             error "The Release file could not be verified with Release.gpg! (use '--force' to ignore)"
