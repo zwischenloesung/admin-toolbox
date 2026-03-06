@@ -50,6 +50,7 @@ hostname="$default_host"
 portnumber="$default_port"
 separated=1
 remote=0
+fullkey=1
 dropbear=1
 
 # The system tools we gladly use. Thank you!
@@ -160,6 +161,11 @@ while true ; do
         -D|--dropbear)
             dropbear=0
         ;;
+#*      -F |--fullkey                       print the full key instead of the
+#*                                          fingerprint
+        -F|--fullkey)
+            fullkey=0
+        ;;
 #*      -h |--help                          print this help
         -h|--help)
             print_help "no"
@@ -210,22 +216,24 @@ fi
 
 if [ $dropbear -eq 1 ] ; then
     if [ $remote -eq 0 ] ; then
-        fingerprint=$($_ssh $ssh_port $hostname $_ssh_keyscan -t $algorithm localhost 2>/dev/null | \
-            $_awk '{print $3}')
+        fingerprint=$($_ssh $ssh_port $hostname $_ssh_keyscan -t $algorithm localhost 2>/dev/null)
     else
-        fingerprint=$($_ssh_keyscan -t $algorithm $ssh_port $hostname 2>/dev/null | \
-            $_awk '{print $3}')
+        fingerprint=$($_ssh_keyscan -t $algorithm $ssh_port $hostname 2>/dev/null)
     fi
 else
-    tmp_file=$(mktemp)
-    $_ssh $ssh_port $hostname "dropbearkey -y -f /etc/dropbear/dropbear_${algorithm}_host_key" | head -2 | tail -1 > $tmp_file
-    fingerprint=$($_ssh_keygen -l -f $tmp_file)
-    rm $tmp_file
+    fingerprint=$($_ssh $ssh_port $hostname "dropbearkey -y -f /etc/dropbear/dropbear_${algorithm}_host_key" | head -2 | tail -1)
 fi
 
 if [ -z "$fingerprint" ] ; then
     die "unable to get the fingerprint from $hostname"
 fi
+
+if [ $fullkey -eq 0 ] ; then
+    echo $fingerprint
+    exit 0
+fi
+
+fingerprint=$(echo $fingerprint | $_ssh_keygen -lf - | $_awk '{print $2}')
 
 if [ $rehash -eq 0 ] ; then
     hashtool="_${hashfunction}sum"
