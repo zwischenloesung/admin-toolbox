@@ -1,6 +1,6 @@
 #!/bin/bash -e
 ########################################################################
-#** Version: 0.1
+#** Version: 0.1.1
 #* This script checks a mirror for files and checksums..
 #
 # note: the frame for this script was auto-created with
@@ -324,6 +324,23 @@ get_architectures() {
     $_wget -O - ${debian_mirror}/${debian_version}/main/ 2>/dev/null | $_grep "installer-" | $_sed 's;.*installer-\([a-z]*[0-9]*\).*;\1;' | $_sed 's;/;;'
 }
 
+make_boot_stick() {
+    warn "Not implemented yet..."
+    bootdir="$1"
+    [[ -z "/$bootdir" ]] && error "Boot directory can not be empty.."
+    [[ -d "/$bootdir" ]] || error "Boot directory '$bootdir' must exist.."
+#    grub-install --target=x86_64-efi --efi-directory="/$bootdir" --boot-directory="/$bootdir/boot" --removable --no-nvram
+#    cat >> "$bootdir/boot/grub/grub.cfg" < EOF
+#menuentry "Debian minimal installer" {
+#linux  (hd0,1)/boot_images/debian-mini/$debian_version/linux
+#initrd (hd0,1)/boot_images/debian-mini/$debian_version/initrd.gz
+#}
+#EOF
+#    mkdir "$bootdir/boot_images/debian-mini/$debian_version/"
+#    cd "$bootdir/boot_images/debian-mini/$debian_version/"
+#    get_files
+}
+
 cwd=$($_pwd)
 
 case $action in
@@ -346,6 +363,10 @@ case $action in
 #*      show_mirror     Display the configured mirror.
     show_mirror|mirror)
         echo $debian_mirror
+    ;;
+#*      usb-boot        Create a bootable USB-Stick
+    usb-boot)
+        make_boot_stick
     ;;
 #*      versions        Show what versions are available on the mirror.
     ver*)
